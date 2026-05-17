@@ -1,0 +1,31 @@
+# Build
+build/
+out/
+bin/
+*.class
+.kotlin/
+
+# Gradle
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+*.local
+
+# Node (frontend)
+node_modules/
+.next/
+
+# Generated
+backend/build/
+frontend/.next/

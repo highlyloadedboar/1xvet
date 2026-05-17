@@ -1,0 +1,9 @@
+spring:
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.sql
+
+zonky:
+  test:
+    database:
+      provider: ZONKY
+      type: POSTGRES

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<configuration>
+    <jdbc>
+        <driver>org.postgresql.Driver</driver>
+        <url>jdbc:postgresql://localhost:5432/xvet</url>
+        <user>xvet</user>
+        <password>xvet</password>
+    </jdbc>
+    <generator>
+        <name>org.jooq.codegen.KotlinGenerator</name>
+        <database>
+            <name>org.jooq.meta.postgres.PostgresDatabase</name>
+            <inputSchema>public</inputSchema>
+        </database>
+        <generate>
+            <deprecated>false</deprecated>
+            <records>true</records>
+            <immutablePojos>true</immutablePojos>
+            <fluentSetters>true</fluentSetters>
+        </generate>
+        <target>
+            <packageName>com.xvet.jooq</packageName>
+            <directory>build/generated/jooq</directory>
+        </target>
+    </generator>
+</configuration>

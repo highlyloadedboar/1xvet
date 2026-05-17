@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: 1xvet-backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/xvet
+    username: xvet
+    password: xvet
+    driver-class-name: org.postgresql.Driver
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.sql
+
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  port: 8080
