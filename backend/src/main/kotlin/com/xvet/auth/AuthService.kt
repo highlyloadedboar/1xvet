@@ -2,6 +2,7 @@ package com.xvet.auth
 
 import com.xvet.api.model.AuthResponse
 import com.xvet.api.model.AuthResponseUser
+import com.xvet.api.model.LoginRequest
 import com.xvet.api.model.RegisterRequest
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service
 class AuthService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
+    private val jwtService: JwtService,
 ) {
     fun register(request: RegisterRequest): AuthResponse {
         if (userRepository.existsByEmail(request.email)) {
@@ -28,7 +30,22 @@ class AuthService(
             )
 
         return AuthResponse(
-            token = "",
+            token = jwtService.generateToken(user),
+            user = user.toUserInfo(),
+        )
+    }
+
+    fun login(request: LoginRequest): AuthResponse {
+        val user =
+            userRepository.findByEmail(request.email)
+                ?: throw InvalidCredentialsException()
+
+        if (!passwordEncoder.matches(request.password, user.password)) {
+            throw InvalidCredentialsException()
+        }
+
+        return AuthResponse(
+            token = jwtService.generateToken(user),
             user = user.toUserInfo(),
         )
     }
@@ -37,6 +54,8 @@ class AuthService(
 class EmailAlreadyExistsException(
     email: String,
 ) : RuntimeException("Email already exists: $email")
+
+class InvalidCredentialsException : RuntimeException("Invalid email or password")
 
 fun UserEntity.toUserInfo() =
     AuthResponseUser(

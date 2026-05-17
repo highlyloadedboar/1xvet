@@ -18,6 +18,7 @@ class AuthController(
     }
 
     override fun login(loginRequest: LoginRequest): ResponseEntity<AuthResponse> {
-        TODO("Will be implemented in next PR")
+        val response = authService.login(loginRequest)
+        return ResponseEntity.ok(response)
     }
 }

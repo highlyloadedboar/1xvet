@@ -5,3 +5,7 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD}
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.sql
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration-ms: 86400000
