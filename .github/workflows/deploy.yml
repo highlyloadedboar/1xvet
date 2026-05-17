@@ -3,13 +3,18 @@ name: Deploy
 on:
   workflow_dispatch:
 
+env:
+  REGISTRY: cr.yandex/crph08te7d3t1tjdnjdc
+  IMAGE_NAME: xvet-backend
+  VM_USER: yc-user
+  VM_ADDRESS: 111.88.254.81
+
 permissions:
   contents: read
-  packages: write
 
 jobs:
   build:
-    name: Build Docker image
+    name: Build & Push Docker image
     runs-on: ubuntu-latest
     outputs:
       image-tag: ${{ steps.meta.outputs.version }}
@@ -28,17 +33,19 @@ jobs:
         working-directory: backend
         run: ./gradlew build
 
-      - name: Build Docker image
+      - name: Login to Yandex Container Registry
+        run: echo '${{ secrets.YC_SA_KEY }}' | docker login --username json_key --password-stdin cr.yandex
+
+      - name: Build and push Docker image
         id: meta
         working-directory: backend
         run: |
           VERSION=$(git rev-parse --short HEAD)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          docker build -t ${{ github.repository }}:$VERSION .
-
-      # TODO: push image to container registry (Yandex Cloud CR)
-      # - name: Push to registry
-      #   run: ...
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION .
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest .
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
   deploy-testing:
     name: Deploy to Testing
@@ -47,11 +54,26 @@ jobs:
     environment: testing
 
     steps:
-      - uses: actions/checkout@v4
-
-      # TODO: deploy to Yandex Cloud testing environment
-      - name: Deploy to testing
-        run: echo "Deploying ${{ needs.build.outputs.image-tag }} to testing"
+      - name: Deploy to VM
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ env.VM_ADDRESS }}
+          username: ${{ env.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            docker login --username json_key --password-stdin cr.yandex <<< '${{ secrets.YC_SA_KEY }}'
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image-tag }}
+            docker stop xvet-backend || true
+            docker rm xvet-backend || true
+            docker run -d \
+              --name xvet-backend \
+              --restart unless-stopped \
+              -p 8080:8080 \
+              -e SPRING_DATASOURCE_URL=${{ secrets.DB_URL }} \
+              -e SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USER }} \
+              -e SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e SPRING_PROFILES_ACTIVE=prod \
+              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image-tag }}
 
   deploy-production:
     name: Deploy to Production
@@ -60,8 +82,22 @@ jobs:
     environment: production
 
     steps:
-      - uses: actions/checkout@v4
-
-      # TODO: deploy to Yandex Cloud production environment
-      - name: Deploy to production
-        run: echo "Deploying ${{ needs.build.outputs.image-tag }} to production"
+      - name: Deploy to VM
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ env.VM_ADDRESS }}
+          username: ${{ env.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image-tag }}
+            docker stop xvet-backend || true
+            docker rm xvet-backend || true
+            docker run -d \
+              --name xvet-backend \
+              --restart unless-stopped \
+              -p 8080:8080 \
+              -e SPRING_DATASOURCE_URL=${{ secrets.DB_URL }} \
+              -e SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USER }} \
+              -e SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e SPRING_PROFILES_ACTIVE=prod \
+              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image-tag }}
