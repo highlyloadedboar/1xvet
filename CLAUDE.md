@@ -9,15 +9,15 @@
 
 ## Стек
 
-| Слой           | Технология                             |
-|----------------|----------------------------------------|
-| Backend        | Kotlin + Spring Boot                   |
-| Frontend       | Next.js (React, TypeScript)            |
-| БД             | PostgreSQL                             |
-| API            | REST (рассматриваем GraphQL для чатов) |
-| Реалтайм       | WebSocket (чат)                        |
-| Аутентификация | Spring Security + JWT (своя реализация)|
-| Деплой         | Yandex Cloud + Docker + GitHub Actions |
+| Слой           | Технология                              |
+|----------------|-----------------------------------------|
+| Backend        | Kotlin + Spring Boot                    |
+| Frontend       | Next.js (React, TypeScript)             |
+| БД             | PostgreSQL                              |
+| API            | REST (рассматриваем GraphQL для чатов)  |
+| Реалтайм       | WebSocket (чат)                         |
+| Аутентификация | Spring Security + JWT (своя реализация) |
+| Деплой         | Yandex Cloud + Docker + GitHub Actions  |
 
 ## Структура проекта
 
@@ -105,4 +105,4 @@ docker compose up -d       # поднять PostgreSQL
 - Язык кода: английский (переменные, комментарии)
 - Язык интерфейса: русский
 - Git: conventional commits (feat:, fix:, docs:, refactor:)
-- Ветки: feature/<name>, fix/<name>
+- Branching: GitHub Flow (см. docs/conventions/coding.md)
