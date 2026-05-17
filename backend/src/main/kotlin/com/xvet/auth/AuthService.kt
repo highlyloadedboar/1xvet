@@ -1,0 +1,48 @@
+package com.xvet.auth
+
+import com.xvet.api.model.AuthResponse
+import com.xvet.api.model.AuthResponseUser
+import com.xvet.api.model.RegisterRequest
+import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.stereotype.Service
+
+@Service
+class AuthService(
+    private val userRepository: UserRepository,
+    private val passwordEncoder: PasswordEncoder,
+) {
+    fun register(request: RegisterRequest): AuthResponse {
+        if (userRepository.existsByEmail(request.email)) {
+            throw EmailAlreadyExistsException(request.email)
+        }
+
+        val user =
+            userRepository.save(
+                UserEntity(
+                    email = request.email,
+                    password = passwordEncoder.encode(request.password),
+                    firstName = request.firstName,
+                    lastName = request.lastName,
+                    role = UserRole.valueOf(request.role.value),
+                ),
+            )
+
+        return AuthResponse(
+            token = "",
+            user = user.toUserInfo(),
+        )
+    }
+}
+
+class EmailAlreadyExistsException(
+    email: String,
+) : RuntimeException("Email already exists: $email")
+
+fun UserEntity.toUserInfo() =
+    AuthResponseUser(
+        id = id,
+        email = email,
+        firstName = firstName,
+        lastName = lastName,
+        role = AuthResponseUser.Role.valueOf(role.name),
+    )
