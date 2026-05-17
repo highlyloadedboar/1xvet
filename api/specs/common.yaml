@@ -1,0 +1,9 @@
+schemas:
+  ErrorResponse:
+    type: object
+    required:
+      - message
+    properties:
+      message:
+        type: string
+        example: "Email already exists"
