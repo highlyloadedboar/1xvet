@@ -7,6 +7,8 @@ RUN apk add --no-cache curl \
        -file /usr/local/share/ca-certificates/yandex-cloud-ca.crt \
        -keystore $JAVA_HOME/lib/security/cacerts \
        -storepass changeit \
+    && mkdir -p /root/.postgresql \
+    && cp /usr/local/share/ca-certificates/yandex-cloud-ca.crt /root/.postgresql/root.crt \
     && apk del curl
 
 WORKDIR /app
