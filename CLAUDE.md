@@ -88,7 +88,6 @@ cd backend
 ./gradlew bootRun          # запустить приложение
 ./gradlew test             # тесты (Zonky embedded PG, без Docker)
 ./gradlew openApiGenerate  # сгенерировать контроллеры/DTO из OpenAPI
-./gradlew jooqCodegen      # сгенерировать jOOQ классы (нужна БД)
 ./gradlew detekt           # статический анализ
 ./gradlew ktlintFormat     # автоформат кода
 

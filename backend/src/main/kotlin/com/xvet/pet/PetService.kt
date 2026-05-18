@@ -3,19 +3,23 @@ package com.xvet.pet
 import com.xvet.api.model.CreatePetRequest
 import com.xvet.api.model.PetResponse
 import com.xvet.api.model.UpdatePetRequest
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
 @Service
 class PetService(
     private val petRepository: PetRepository,
 ) {
-    fun getMyPets(ownerId: Long): List<PetResponse> = petRepository.findByOwnerId(ownerId).map { it.toResponse() }
+    fun getMyPets(ownerId: Long): List<PetResponse> {
+        val pets = petRepository.findByOwnerIdOrderByCreatedAtDesc(ownerId)
+        return pets.map { it.toResponse() }
+    }
 
     fun getPet(
         petId: Long,
         ownerId: Long,
     ): PetResponse {
-        val pet = petRepository.findById(petId) ?: throw PetNotFoundException(petId)
+        val pet = petRepository.findByIdOrNull(petId) ?: throw PetNotFoundException(petId)
         if (pet.ownerId != ownerId) throw PetNotFoundException(petId)
         return pet.toResponse()
     }
@@ -43,25 +47,24 @@ class PetService(
         request: UpdatePetRequest,
         ownerId: Long,
     ): PetResponse {
-        val existing = petRepository.findById(petId) ?: throw PetNotFoundException(petId)
-        if (existing.ownerId != ownerId) throw PetNotFoundException(petId)
+        val pet = petRepository.findByIdOrNull(petId) ?: throw PetNotFoundException(petId)
+        if (pet.ownerId != ownerId) throw PetNotFoundException(petId)
 
-        val updated =
-            existing.copy(
-                name = request.name ?: existing.name,
-                species = request.species?.let { PetSpecies.valueOf(it.value) } ?: existing.species,
-                breed = request.breed ?: existing.breed,
-                birthDate = request.birthDate ?: existing.birthDate,
-                weight = request.weight ?: existing.weight,
-            )
-        return petRepository.update(updated).toResponse()
+        request.name?.let { pet.name = it }
+        request.species?.let { pet.species = PetSpecies.valueOf(it.value) }
+        request.breed?.let { pet.breed = it }
+        request.birthDate?.let { pet.birthDate = it }
+        request.weight?.let { pet.weight = it }
+        pet.updatedAt = java.time.LocalDateTime.now()
+
+        return petRepository.save(pet).toResponse()
     }
 
     fun deletePet(
         petId: Long,
         ownerId: Long,
     ) {
-        val pet = petRepository.findById(petId) ?: throw PetNotFoundException(petId)
+        val pet = petRepository.findByIdOrNull(petId) ?: throw PetNotFoundException(petId)
         if (pet.ownerId != ownerId) throw PetNotFoundException(petId)
         petRepository.deleteById(petId)
     }
