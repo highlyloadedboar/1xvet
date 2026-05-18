@@ -1,65 +1,50 @@
 package com.xvet.auth
 
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
-import org.springframework.jdbc.support.GeneratedKeyHolder
+import com.xvet.jooq.tables.references.USERS
+import org.jooq.DSLContext
 import org.springframework.stereotype.Repository
+import com.xvet.jooq.enums.UserRole as JooqUserRole
 
 @Repository
 class UserRepository(
-    private val jdbc: NamedParameterJdbcTemplate,
+    private val dsl: DSLContext,
 ) {
     fun save(user: UserEntity): UserEntity {
-        val keyHolder = GeneratedKeyHolder()
-        jdbc.update(
-            """
-            INSERT INTO users (email, password, first_name, last_name, role)
-            VALUES (:email, :password, :firstName, :lastName, :role::user_role)
-            """,
-            MapSqlParameterSource()
-                .addValue("email", user.email)
-                .addValue("password", user.password)
-                .addValue("firstName", user.firstName)
-                .addValue("lastName", user.lastName)
-                .addValue("role", user.role.name),
-            keyHolder,
-            arrayOf("id", "created_at", "updated_at"),
-        )
-        val keys = keyHolder.keys!!
-        return user.copy(
-            id = keys["id"] as Long,
-            createdAt = (keys["created_at"] as java.sql.Timestamp).toLocalDateTime(),
-            updatedAt = (keys["updated_at"] as java.sql.Timestamp).toLocalDateTime(),
-        )
+        val record =
+            dsl
+                .insertInto(USERS)
+                .set(USERS.EMAIL, user.email)
+                .set(USERS.PASSWORD, user.password)
+                .set(USERS.FIRST_NAME, user.firstName)
+                .set(USERS.LAST_NAME, user.lastName)
+                .set(USERS.ROLE, JooqUserRole.valueOf(user.role.name))
+                .returning()
+                .fetchOne()!!
+
+        return record.toEntity()
     }
 
-    fun findByEmail(email: String): UserEntity? {
-        val users =
-            jdbc.query(
-                "SELECT * FROM users WHERE email = :email",
-                MapSqlParameterSource("email", email),
-            ) { rs, _ ->
-                UserEntity(
-                    id = rs.getLong("id"),
-                    email = rs.getString("email"),
-                    password = rs.getString("password"),
-                    firstName = rs.getString("first_name"),
-                    lastName = rs.getString("last_name"),
-                    role = UserRole.valueOf(rs.getString("role")),
-                    createdAt = rs.getTimestamp("created_at").toLocalDateTime(),
-                    updatedAt = rs.getTimestamp("updated_at").toLocalDateTime(),
-                )
-            }
-        return users.firstOrNull()
-    }
+    fun findByEmail(email: String): UserEntity? =
+        dsl
+            .selectFrom(USERS)
+            .where(USERS.EMAIL.eq(email))
+            .fetchOne()
+            ?.toEntity()
 
-    fun existsByEmail(email: String): Boolean {
-        val count =
-            jdbc.queryForObject(
-                "SELECT COUNT(*) FROM users WHERE email = :email",
-                MapSqlParameterSource("email", email),
-                Long::class.java,
-            )
-        return count != null && count > 0
-    }
+    fun existsByEmail(email: String): Boolean =
+        dsl.fetchExists(
+            dsl.selectFrom(USERS).where(USERS.EMAIL.eq(email)),
+        )
+
+    private fun org.jooq.Record.toEntity() =
+        UserEntity(
+            id = get(USERS.ID)!!,
+            email = get(USERS.EMAIL)!!,
+            password = get(USERS.PASSWORD)!!,
+            firstName = get(USERS.FIRST_NAME)!!,
+            lastName = get(USERS.LAST_NAME)!!,
+            role = UserRole.valueOf(get(USERS.ROLE)!!.name),
+            createdAt = get(USERS.CREATED_AT)!!,
+            updatedAt = get(USERS.UPDATED_AT)!!,
+        )
 }

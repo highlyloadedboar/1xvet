@@ -1,93 +1,77 @@
 package com.xvet.pet
 
-import org.springframework.jdbc.core.RowMapper
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
-import org.springframework.jdbc.support.GeneratedKeyHolder
+import com.xvet.jooq.tables.references.PETS
+import org.jooq.DSLContext
 import org.springframework.stereotype.Repository
+import com.xvet.jooq.enums.PetSpecies as JooqPetSpecies
 
 @Repository
 class PetRepository(
-    private val jdbc: NamedParameterJdbcTemplate,
+    private val dsl: DSLContext,
 ) {
-    private val rowMapper =
-        RowMapper { rs, _ ->
-            PetEntity(
-                id = rs.getLong("id"),
-                ownerId = rs.getLong("owner_id"),
-                name = rs.getString("name"),
-                species = PetSpecies.valueOf(rs.getString("species")),
-                breed = rs.getString("breed"),
-                birthDate = rs.getDate("birth_date")?.toLocalDate(),
-                weight = rs.getObject("weight") as? Double,
-                createdAt = rs.getTimestamp("created_at").toLocalDateTime(),
-                updatedAt = rs.getTimestamp("updated_at").toLocalDateTime(),
-            )
-        }
-
     fun save(pet: PetEntity): PetEntity {
-        val keyHolder = GeneratedKeyHolder()
-        jdbc.update(
-            """
-            INSERT INTO pets (owner_id, name, species, breed, birth_date, weight)
-            VALUES (:ownerId, :name, :species::pet_species, :breed, :birthDate, :weight)
-            """,
-            MapSqlParameterSource()
-                .addValue("ownerId", pet.ownerId)
-                .addValue("name", pet.name)
-                .addValue("species", pet.species.name)
-                .addValue("breed", pet.breed)
-                .addValue("birthDate", pet.birthDate)
-                .addValue("weight", pet.weight),
-            keyHolder,
-            arrayOf("id", "created_at", "updated_at"),
-        )
-        val keys = keyHolder.keys!!
-        return pet.copy(
-            id = keys["id"] as Long,
-            createdAt = (keys["created_at"] as java.sql.Timestamp).toLocalDateTime(),
-            updatedAt = (keys["updated_at"] as java.sql.Timestamp).toLocalDateTime(),
-        )
+        val record =
+            dsl
+                .insertInto(PETS)
+                .set(PETS.OWNER_ID, pet.ownerId)
+                .set(PETS.NAME, pet.name)
+                .set(PETS.SPECIES, JooqPetSpecies.valueOf(pet.species.name))
+                .set(PETS.BREED, pet.breed)
+                .set(PETS.BIRTH_DATE, pet.birthDate)
+                .set(PETS.WEIGHT, pet.weight)
+                .returning()
+                .fetchOne()!!
+
+        return record.toEntity()
     }
 
     fun findByOwnerId(ownerId: Long): List<PetEntity> =
-        jdbc.query(
-            "SELECT * FROM pets WHERE owner_id = :ownerId ORDER BY created_at DESC",
-            MapSqlParameterSource("ownerId", ownerId),
-            rowMapper,
-        )
+        dsl
+            .selectFrom(PETS)
+            .where(PETS.OWNER_ID.eq(ownerId))
+            .orderBy(PETS.CREATED_AT.desc())
+            .fetch()
+            .map { it.toEntity() }
 
     fun findById(id: Long): PetEntity? =
-        jdbc
-            .query(
-                "SELECT * FROM pets WHERE id = :id",
-                MapSqlParameterSource("id", id),
-                rowMapper,
-            ).firstOrNull()
+        dsl
+            .selectFrom(PETS)
+            .where(PETS.ID.eq(id))
+            .fetchOne()
+            ?.toEntity()
 
     fun update(pet: PetEntity): PetEntity {
-        jdbc.update(
-            """
-            UPDATE pets SET name = :name, species = :species::pet_species,
-                breed = :breed, birth_date = :birthDate, weight = :weight,
-                updated_at = NOW()
-            WHERE id = :id
-            """,
-            MapSqlParameterSource()
-                .addValue("id", pet.id)
-                .addValue("name", pet.name)
-                .addValue("species", pet.species.name)
-                .addValue("breed", pet.breed)
-                .addValue("birthDate", pet.birthDate)
-                .addValue("weight", pet.weight),
-        )
+        dsl
+            .update(PETS)
+            .set(PETS.NAME, pet.name)
+            .set(PETS.SPECIES, JooqPetSpecies.valueOf(pet.species.name))
+            .set(PETS.BREED, pet.breed)
+            .set(PETS.BIRTH_DATE, pet.birthDate)
+            .set(PETS.WEIGHT, pet.weight)
+            .set(PETS.UPDATED_AT, java.time.LocalDateTime.now())
+            .where(PETS.ID.eq(pet.id))
+            .execute()
+
         return findById(pet.id)!!
     }
 
     fun deleteById(id: Long) {
-        jdbc.update(
-            "DELETE FROM pets WHERE id = :id",
-            MapSqlParameterSource("id", id),
-        )
+        dsl
+            .deleteFrom(PETS)
+            .where(PETS.ID.eq(id))
+            .execute()
     }
+
+    private fun org.jooq.Record.toEntity() =
+        PetEntity(
+            id = get(PETS.ID)!!,
+            ownerId = get(PETS.OWNER_ID)!!,
+            name = get(PETS.NAME)!!,
+            species = PetSpecies.valueOf(get(PETS.SPECIES)!!.name),
+            breed = get(PETS.BREED),
+            birthDate = get(PETS.BIRTH_DATE),
+            weight = get(PETS.WEIGHT),
+            createdAt = get(PETS.CREATED_AT)!!,
+            updatedAt = get(PETS.UPDATED_AT)!!,
+        )
 }

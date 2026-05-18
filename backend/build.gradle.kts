@@ -50,6 +50,9 @@ dependencies {
     // Logging
     implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
 
+    // jOOQ codegen
+    implementation("org.jooq:jooq-codegen")
+
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
@@ -89,7 +92,7 @@ sourceSets {
     main {
         kotlin {
             srcDir("${layout.buildDirectory.get()}/generated/openapi/src/main/kotlin")
-            srcDir("${layout.buildDirectory.get()}/generated/jooq")
+            srcDir("src/generated/jooq")
         }
     }
 }
@@ -99,14 +102,15 @@ tasks.named("compileKotlin") {
 }
 
 // ─── jOOQ ──────────────────────────────────────────────────────────────────────
-// Run manually when DB is up: ./gradlew jooqCodegen
+// Run when schema changes: ./gradlew jooqCodegen
+// Uses embedded PostgreSQL (no Docker needed)
 
 tasks.register<JavaExec>("jooqCodegen") {
     group = "jooq"
-    description = "Generate jOOQ classes from database schema"
-    mainClass.set("org.jooq.codegen.GenerationTool")
-    classpath = sourceSets["main"].runtimeClasspath
-    args = listOf("src/main/resources/jooq-config.xml")
+    description = "Generate jOOQ classes from database schema (embedded PG)"
+    mainClass.set("com.xvet.JooqCodegenKt")
+    classpath = sourceSets["test"].runtimeClasspath
+    dependsOn("compileTestKotlin")
 }
 
 // ─── detekt ────────────────────────────────────────────────────────────────────
@@ -123,6 +127,7 @@ ktlint {
     android.set(false)
     filter {
         exclude { it.file.path.contains("/generated/") || it.file.path.contains("/build/") }
+        exclude { it.file.path.contains("src/generated/") }
     }
 }
 
@@ -134,6 +139,7 @@ tasks.withType<Test> {
 
 tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
     exclude("**/generated/**")
+    exclude("**/jooq/**")
 }
 
 tasks.named("runKtlintCheckOverMainSourceSet") {
