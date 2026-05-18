@@ -26,7 +26,8 @@ export default function RegisterPage() {
       });
       localStorage.setItem("token", res.token);
       localStorage.setItem("user", JSON.stringify(res.user));
-      router.push("/");
+      const target = res.user.role === "VET" ? "/vet/dashboard" : "/dashboard";
+      router.push(target);
     } catch (err) {
       const apiErr = err as ApiError;
       if (apiErr.status === 409) {
