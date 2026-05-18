@@ -3,16 +3,23 @@ package com.xvet.auth
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
+import jakarta.annotation.PostConstruct
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.util.Date
+import javax.crypto.SecretKey
 
 @Service
 class JwtService(
     @Value("\${jwt.secret}") private val secret: String,
     @Value("\${jwt.expiration-ms}") private val expirationMs: Long,
 ) {
-    private val key by lazy { Keys.hmacShaKeyFor(secret.toByteArray()) }
+    private lateinit var key: SecretKey
+
+    @PostConstruct
+    fun init() {
+        key = Keys.hmacShaKeyFor(secret.toByteArray())
+    }
 
     fun generateToken(user: UserEntity): String {
         val now = Date()
