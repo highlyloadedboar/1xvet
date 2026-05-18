@@ -86,6 +86,43 @@ api/specs/
 
 **Не тестируем:** сгенерённые контроллеры, тривиальный маппинг, конфиги.
 
+### Стандарты тестов
+
+**Базовый класс:** все интеграционные тесты наследуют `BaseIntegrationTest`:
+```kotlin
+class MyFeatureTest : BaseIntegrationTest() {
+```
+Базовый класс содержит:
+- Все аннотации (`@SpringBootTest`, `@AutoConfigureMockMvc`, `@ActiveProfiles("test")`, `@AutoConfigureEmbeddedDatabase`, `@Transactional`)
+- `mockMvc`, `objectMapper`
+- Хелперы: `registerUser()`, `loginUser()`, `registerAndGetToken()`, `randomEmail()`
+
+**Изоляция:** `@Transactional` на базовом классе — каждый тест работает в своей транзакции и откатывается. Тесты не влияют друг на друга.
+
+**Случайные данные:** используем `randomEmail()` (UUID-based) вместо хардкода email — тесты не ломаются при изменении порядка запуска.
+
+**Группировка:** `@Nested` для логических групп внутри тестового класса:
+```kotlin
+@Nested
+inner class Register {
+    @Test
+    fun `should return 201 with token`() { ... }
+}
+
+@Nested
+inner class Login {
+    @Test
+    fun `should return 401 when password is wrong`() { ... }
+}
+```
+
+**Именование тестов:** `should <действие> when <условие>`:
+- `should return 201 with token and user info`
+- `should return 401 when password is wrong`
+- `should be accessible without token`
+
+**Проверка ответов:** `jsonPath` на конкретные поля (не сравнение целого JSON — устойчивее к изменениям схемы).
+
 ## Kotlin-стиль
 
 **Spring MVC (blocking)** — классический подход, один запрос = один поток.
