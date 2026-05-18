@@ -95,7 +95,11 @@ cd backend
 # Инфраструктура
 docker compose up -d       # поднять PostgreSQL
 
-# Frontend — TODO
+# Frontend
+cd frontend
+npm run dev              # dev-сервер (http://localhost:3000)
+npm run build            # production-сборка
+npm run lint             # ESLint
 ```
 
 **Важно:** Gradle требует Java 21 (настроено в `gradle.properties`).
