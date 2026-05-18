@@ -1,6 +1,7 @@
 package com.xvet.common
 
 import com.xvet.auth.JwtFilter
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -27,6 +28,10 @@ class SecurityConfig(
                     .permitAll()
                     .anyRequest()
                     .authenticated()
+            }.exceptionHandling {
+                it.authenticationEntryPoint { _, response, _ ->
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
+                }
             }.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter::class.java)
         return http.build()
     }

@@ -25,10 +25,11 @@ class UserRepository(
             keyHolder,
             arrayOf("id", "created_at", "updated_at"),
         )
+        val keys = keyHolder.keys!!
         return user.copy(
-            id = keyHolder.keys!!["id"] as Long,
-            createdAt = keyHolder.keys!!["created_at"] as java.time.LocalDateTime,
-            updatedAt = keyHolder.keys!!["updated_at"] as java.time.LocalDateTime,
+            id = keys["id"] as Long,
+            createdAt = (keys["created_at"] as java.sql.Timestamp).toLocalDateTime(),
+            updatedAt = (keys["updated_at"] as java.sql.Timestamp).toLocalDateTime(),
         )
     }
 
