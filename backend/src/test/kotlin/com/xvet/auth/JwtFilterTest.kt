@@ -35,7 +35,7 @@ class JwtFilterTest : BaseIntegrationTest() {
             mockMvc
                 .get("/api/pets") {
                     header("Authorization", "Bearer $token")
-                }.andExpect { status { isNotFound() } }
+                }.andExpect { status { isOk() } }
         }
     }
 }
