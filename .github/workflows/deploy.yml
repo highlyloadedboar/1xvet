@@ -62,7 +62,7 @@ jobs:
         run: |
           VERSION=$(git rev-parse --short HEAD)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          docker build -t ${{ env.REGISTRY }}/xvet-frontend:$VERSION .
+          docker build --build-arg NEXT_PUBLIC_API_URL=http://${{ env.VM_ADDRESS }}:8080 -t ${{ env.REGISTRY }}/xvet-frontend:$VERSION .
           docker push ${{ env.REGISTRY }}/xvet-frontend:$VERSION
 
   deploy-testing:
