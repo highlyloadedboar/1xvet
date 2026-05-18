@@ -1,5 +1,6 @@
 package com.xvet.auth
 
+import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
 import jakarta.annotation.PostConstruct
@@ -32,4 +33,12 @@ class JwtService(
             .signWith(key)
             .compact()
     }
+
+    fun parseToken(token: String): Claims =
+        Jwts
+            .parser()
+            .verifyWith(key)
+            .build()
+            .parseSignedClaims(token)
+            .payload
 }
