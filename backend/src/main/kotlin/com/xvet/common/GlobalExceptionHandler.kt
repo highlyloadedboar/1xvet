@@ -3,6 +3,7 @@ package com.xvet.common
 import com.xvet.api.model.ErrorResponse
 import com.xvet.auth.EmailAlreadyExistsException
 import com.xvet.auth.InvalidCredentialsException
+import com.xvet.pet.PetNotFoundException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -20,5 +21,11 @@ class GlobalExceptionHandler {
     fun handleInvalidCredentials(ex: InvalidCredentialsException): ResponseEntity<ErrorResponse> {
         val message = ex.message ?: "Invalid credentials"
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ErrorResponse(message = message))
+    }
+
+    @ExceptionHandler(PetNotFoundException::class)
+    fun handlePetNotFound(ex: PetNotFoundException): ResponseEntity<ErrorResponse> {
+        val message = ex.message ?: "Pet not found"
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse(message = message))
     }
 }
