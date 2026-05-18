@@ -26,6 +26,34 @@ export interface LoginRequest {
   password: string;
 }
 
+export type PetSpecies = "DOG" | "CAT" | "BIRD" | "RODENT" | "REPTILE" | "OTHER";
+
+export interface PetResponse {
+  id: number;
+  name: string;
+  species: PetSpecies;
+  breed?: string;
+  birthDate?: string;
+  weight?: number;
+  ownerId: number;
+}
+
+export interface CreatePetRequest {
+  name: string;
+  species: PetSpecies;
+  breed?: string;
+  birthDate?: string;
+  weight?: number;
+}
+
+export interface UpdatePetRequest {
+  name?: string;
+  species?: PetSpecies;
+  breed?: string;
+  birthDate?: string;
+  weight?: number;
+}
+
 export interface ApiError {
   status: number;
   message: string;
@@ -81,6 +109,30 @@ class ApiClient {
     return this.request("/api/auth/login", {
       method: "POST",
       body: JSON.stringify(data),
+    });
+  }
+
+  getMyPets(): Promise<PetResponse[]> {
+    return this.request("/api/pets");
+  }
+
+  createPet(data: CreatePetRequest): Promise<PetResponse> {
+    return this.request("/api/pets", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  updatePet(petId: number, data: UpdatePetRequest): Promise<PetResponse> {
+    return this.request(`/api/pets/${petId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  deletePet(petId: number): Promise<void> {
+    return this.request(`/api/pets/${petId}`, {
+      method: "DELETE",
     });
   }
 }
