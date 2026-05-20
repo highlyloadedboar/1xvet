@@ -3,6 +3,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
     kotlin("jvm") version "2.0.21"
     kotlin("plugin.spring") version "2.0.21"
+    kotlin("plugin.jpa") version "2.0.21"
     id("org.openapi.generator") version "7.10.0"
     id("io.gitlab.arturbosch.detekt") version "1.23.8"
     id("org.jlleitschuh.gradle.ktlint") version "12.1.2"
@@ -27,7 +28,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.springframework.boot:spring-boot-starter-jooq")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
     // Kotlin
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -89,24 +90,12 @@ sourceSets {
     main {
         kotlin {
             srcDir("${layout.buildDirectory.get()}/generated/openapi/src/main/kotlin")
-            srcDir("${layout.buildDirectory.get()}/generated/jooq")
         }
     }
 }
 
 tasks.named("compileKotlin") {
     dependsOn("openApiGenerate")
-}
-
-// ─── jOOQ ──────────────────────────────────────────────────────────────────────
-// Run manually when DB is up: ./gradlew jooqCodegen
-
-tasks.register<JavaExec>("jooqCodegen") {
-    group = "jooq"
-    description = "Generate jOOQ classes from database schema"
-    mainClass.set("org.jooq.codegen.GenerationTool")
-    classpath = sourceSets["main"].runtimeClasspath
-    args = listOf("src/main/resources/jooq-config.xml")
 }
 
 // ─── detekt ────────────────────────────────────────────────────────────────────
