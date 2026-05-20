@@ -3,3 +3,5 @@ databaseChangeLog:
       file: db/changelog/tables/users.sql
   - include:
       file: db/changelog/tables/pets.sql
+  - include:
+      file: db/changelog/tables/vet_profiles.sql

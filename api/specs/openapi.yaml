@@ -165,6 +165,97 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/vet/profile:
+    get:
+      tags:
+        - vet
+      operationId: getMyVetProfile
+      summary: Get current vet's profile
+      responses:
+        "200":
+          description: Vet profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VetProfileResponse"
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    put:
+      tags:
+        - vet
+      operationId: updateVetProfile
+      summary: Update vet profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateVetProfileRequest"
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VetProfileResponse"
+
+  /api/vets:
+    get:
+      tags:
+        - vet
+      operationId: searchVets
+      summary: Search veterinarians
+      parameters:
+        - name: specialty
+          in: query
+          schema:
+            type: string
+        - name: available
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of vets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VetProfileResponse"
+
+  /api/vets/{vetId}:
+    get:
+      tags:
+        - vet
+      operationId: getVetProfile
+      summary: Get vet profile by ID
+      parameters:
+        - name: vetId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Vet profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VetProfileResponse"
+        "404":
+          description: Vet not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/auth/login:
     post:
       tags:
@@ -214,6 +305,12 @@ components:
       $ref: "pet.yaml#/schemas/UpdatePetRequest"
     PetResponse:
       $ref: "pet.yaml#/schemas/PetResponse"
+
+    # vet
+    VetProfileResponse:
+      $ref: "vet.yaml#/schemas/VetProfileResponse"
+    UpdateVetProfileRequest:
+      $ref: "vet.yaml#/schemas/UpdateVetProfileRequest"
 
     # common
     ErrorResponse:
