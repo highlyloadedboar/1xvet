@@ -30,14 +30,22 @@ export default function OwnerDashboard() {
     <>
       <Header user={user} />
       <main className="mx-auto w-full max-w-5xl px-6 py-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="font-serif text-3xl font-bold">Мои питомцы</h1>
-          <a
-            href="/pets/new"
-            className="rounded-full bg-accent px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
-          >
-            Добавить питомца
-          </a>
+          <div className="flex items-center gap-3">
+            <a
+              href="/vets"
+              className="rounded-full border border-border bg-card px-6 py-2.5 text-sm font-medium transition-colors hover:border-accent/40"
+            >
+              Найти врача
+            </a>
+            <a
+              href="/pets/new"
+              className="rounded-full bg-accent px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+            >
+              Добавить питомца
+            </a>
+          </div>
         </div>
 
         {loading ? (
