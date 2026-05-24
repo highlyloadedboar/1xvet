@@ -54,6 +54,24 @@ export interface UpdatePetRequest {
   weight?: number;
 }
 
+export interface VetProfileResponse {
+  id: number;
+  userId: number;
+  firstName: string;
+  lastName: string;
+  specialty: string;
+  experienceYears: number;
+  description?: string;
+  education?: string;
+  priceRub?: number;
+  available: boolean;
+}
+
+export interface SearchVetsParams {
+  specialty?: string;
+  available?: boolean;
+}
+
 export interface ApiError {
   status: number;
   message: string;
@@ -134,6 +152,16 @@ class ApiClient {
     return this.request(`/api/pets/${petId}`, {
       method: "DELETE",
     });
+  }
+
+  searchVets(params: SearchVetsParams = {}): Promise<VetProfileResponse[]> {
+    const query = new URLSearchParams();
+    if (params.specialty) query.set("specialty", params.specialty);
+    if (params.available !== undefined) {
+      query.set("available", String(params.available));
+    }
+    const qs = query.toString();
+    return this.request(`/api/vets${qs ? `?${qs}` : ""}`);
   }
 }
 
