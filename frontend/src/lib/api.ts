@@ -163,6 +163,10 @@ class ApiClient {
     const qs = query.toString();
     return this.request(`/api/vets${qs ? `?${qs}` : ""}`);
   }
+
+  getVet(vetId: number): Promise<VetProfileResponse> {
+    return this.request(`/api/vets/${vetId}`);
+  }
 }
 
 export const api = new ApiClient(API_URL);
