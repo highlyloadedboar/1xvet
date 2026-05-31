@@ -365,6 +365,86 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/appointments:
+    get:
+      tags:
+        - booking
+      operationId: listMyAppointments
+      summary: List current user's appointments (as owner or vet)
+      responses:
+        "200":
+          description: List of appointments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AppointmentResponse"
+
+    post:
+      tags:
+        - booking
+      operationId: createAppointment
+      summary: Owner books a slot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAppointmentRequest"
+      responses:
+        "201":
+          description: Appointment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppointmentResponse"
+        "403":
+          description: Only owners can book
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Slot or pet not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Slot is already booked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/appointments/{appointmentId}/cancel:
+    post:
+      tags:
+        - booking
+      operationId: cancelAppointment
+      summary: Cancel an appointment (owner or vet)
+      parameters:
+        - name: appointmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Appointment cancelled (idempotent)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppointmentResponse"
+        "404":
+          description: Appointment not found or caller is not a participant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/conversations:
     get:
       tags:
@@ -532,6 +612,12 @@ components:
       $ref: "vet.yaml#/schemas/CreateSlotRequest"
     SlotResponse:
       $ref: "vet.yaml#/schemas/SlotResponse"
+
+    # booking
+    CreateAppointmentRequest:
+      $ref: "booking.yaml#/schemas/CreateAppointmentRequest"
+    AppointmentResponse:
+      $ref: "booking.yaml#/schemas/AppointmentResponse"
 
     # chat
     CreateConversationRequest:

@@ -1,0 +1,69 @@
+schemas:
+  CreateAppointmentRequest:
+    type: object
+    required:
+      - slotId
+    properties:
+      slotId:
+        type: integer
+        format: int64
+      petId:
+        type: integer
+        format: int64
+      reason:
+        type: string
+        maxLength: 1000
+
+  AppointmentResponse:
+    type: object
+    required:
+      - id
+      - slotId
+      - slotStartTime
+      - ownerId
+      - ownerFirstName
+      - ownerLastName
+      - vetProfileId
+      - vetFirstName
+      - vetLastName
+      - status
+      - createdAt
+    properties:
+      id:
+        type: integer
+        format: int64
+      slotId:
+        type: integer
+        format: int64
+      slotStartTime:
+        type: string
+        format: date-time
+      ownerId:
+        type: integer
+        format: int64
+      ownerFirstName:
+        type: string
+      ownerLastName:
+        type: string
+      vetProfileId:
+        type: integer
+        format: int64
+      vetFirstName:
+        type: string
+      vetLastName:
+        type: string
+      petId:
+        type: integer
+        format: int64
+      petName:
+        type: string
+      reason:
+        type: string
+      status:
+        type: string
+        enum:
+          - BOOKED
+          - CANCELLED
+      createdAt:
+        type: string
+        format: date-time
