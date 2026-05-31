@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import Header from "@/components/Header";
-import { api, type ApiError, type VetProfileResponse } from "@/lib/api";
+import {
+  api,
+  type ApiError,
+  type PetResponse,
+  type SlotResponse,
+  type VetProfileResponse,
+} from "@/lib/api";
 
 export default function VetProfilePage() {
   const params = useParams<{ id: string }>();
@@ -67,7 +73,7 @@ export default function VetProfilePage() {
             </p>
           </div>
         ) : (
-          <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_320px]">
+          <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_360px]">
             <section className="space-y-6">
               <div className="rounded-2xl border border-border bg-card p-8">
                 <div className="flex items-start gap-5">
@@ -113,34 +119,227 @@ export default function VetProfilePage() {
               )}
             </section>
 
-            <aside className="lg:sticky lg:top-6 lg:self-start">
-              <div className="rounded-2xl border border-border bg-card p-6">
-                <h2 className="font-serif text-lg font-semibold">
-                  Запись на консультацию
-                </h2>
-                {vet.priceRub !== undefined && (
-                  <p className="mt-2 text-2xl font-semibold">
-                    {vet.priceRub.toLocaleString("ru-RU")} ₽
-                  </p>
-                )}
-                <button
-                  type="button"
-                  onClick={openChat}
-                  disabled={openingChat}
-                  className="mt-5 w-full rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
-                >
-                  {openingChat ? "Открываем чат..." : "Написать в чат"}
-                </button>
-                <p className="mt-3 text-xs text-muted">
-                  Запись на конкретные слоты появится после релиза модуля расписания
-                </p>
-              </div>
+            <aside className="lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+              <BookingPanel
+                vet={vet}
+                onOpenChat={openChat}
+                openingChat={openingChat}
+              />
             </aside>
           </div>
         )}
       </main>
     </>
   );
+}
+
+function BookingPanel({
+  vet,
+  onOpenChat,
+  openingChat,
+}: {
+  vet: VetProfileResponse;
+  onOpenChat: () => void;
+  openingChat: boolean;
+}) {
+  const router = useRouter();
+  const [slots, setSlots] = useState<SlotResponse[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(true);
+  const [pets, setPets] = useState<PetResponse[]>([]);
+  const [selectedSlot, setSelectedSlot] = useState<SlotResponse | null>(null);
+  const [petId, setPetId] = useState<string>("");
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api
+      .listVetSlots(vet.id)
+      .then(setSlots)
+      .finally(() => setSlotsLoading(false));
+    api.getMyPets().then(setPets);
+  }, [vet.id]);
+
+  async function handleBook() {
+    if (!selectedSlot || submitting) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      const appointment = await api.createAppointment({
+        slotId: selectedSlot.id,
+        petId: petId ? Number(petId) : undefined,
+        reason: reason.trim() || undefined,
+      });
+      router.push(`/appointments?highlight=${appointment.id}`);
+    } catch (err) {
+      const apiErr = err as ApiError;
+      if (apiErr.status === 409) {
+        setError("Этот слот уже занят. Выберите другой.");
+        setSlots((prev) => prev.filter((s) => s.id !== selectedSlot.id));
+        setSelectedSlot(null);
+      } else {
+        setError(apiErr.message || "Не удалось записаться");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-6">
+      <h2 className="font-serif text-lg font-semibold">
+        Запись на консультацию
+      </h2>
+      {vet.priceRub !== undefined && (
+        <p className="mt-2 text-2xl font-semibold">
+          {vet.priceRub.toLocaleString("ru-RU")} ₽
+        </p>
+      )}
+
+      <div className="mt-5">
+        {slotsLoading ? (
+          <p className="text-sm text-muted">Загрузка слотов...</p>
+        ) : slots.length === 0 ? (
+          <p className="rounded-lg bg-background px-3 py-2 text-sm text-muted">
+            У врача пока нет свободных слотов
+          </p>
+        ) : (
+          <SlotList
+            slots={slots}
+            selectedId={selectedSlot?.id ?? null}
+            onSelect={(s) => {
+              setSelectedSlot(s);
+              setError("");
+            }}
+          />
+        )}
+      </div>
+
+      {selectedSlot && (
+        <div className="mt-5 space-y-3 border-t border-border pt-5">
+          <div>
+            <label className="block text-sm font-medium">Питомец</label>
+            <select
+              value={petId}
+              onChange={(e) => setPetId(e.target.value)}
+              className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
+            >
+              <option value="">Без указания питомца</option>
+              {pets.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            {pets.length === 0 && (
+              <p className="mt-1 text-xs text-muted">
+                У вас пока нет питомцев — можно добавить позже
+              </p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium">
+              Причина обращения{" "}
+              <span className="text-muted">(необязательно)</span>
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              maxLength={1000}
+              placeholder="Что беспокоит?"
+              className="mt-1 block w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
+            />
+          </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <button
+            type="button"
+            onClick={handleBook}
+            disabled={submitting}
+            className="w-full rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
+          >
+            {submitting
+              ? "Записываем..."
+              : `Записаться на ${formatTime(selectedSlot.startTime)}`}
+          </button>
+        </div>
+      )}
+
+      <div className="mt-5 border-t border-border pt-5">
+        <button
+          type="button"
+          onClick={onOpenChat}
+          disabled={openingChat}
+          className="w-full rounded-full border border-border px-5 py-2.5 text-sm font-medium transition-colors hover:border-accent/40 disabled:opacity-50"
+        >
+          {openingChat ? "Открываем чат..." : "Написать в чат"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SlotList({
+  slots,
+  selectedId,
+  onSelect,
+}: {
+  slots: SlotResponse[];
+  selectedId: number | null;
+  onSelect: (s: SlotResponse) => void;
+}) {
+  const grouped = new Map<string, SlotResponse[]>();
+  for (const slot of slots) {
+    const key = new Date(slot.startTime).toDateString();
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key)!.push(slot);
+  }
+
+  return (
+    <div className="space-y-4">
+      {Array.from(grouped.entries()).map(([day, daySlots]) => (
+        <div key={day}>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted">
+            {formatDay(daySlots[0].startTime)}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {daySlots.map((slot) => {
+              const active = slot.id === selectedId;
+              return (
+                <button
+                  key={slot.id}
+                  type="button"
+                  onClick={() => onSelect(slot)}
+                  className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                    active
+                      ? "border-accent bg-accent text-white"
+                      : "border-border bg-background hover:border-accent/40"
+                  }`}
+                >
+                  {formatTime(slot.startTime)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatDay(iso: string): string {
+  return new Date(iso).toLocaleDateString("ru-RU", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+  });
 }
 
 function formatExperience(years: number): string {

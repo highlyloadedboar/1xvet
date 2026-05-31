@@ -34,6 +34,12 @@ export default function OwnerDashboard() {
           <h1 className="font-serif text-3xl font-bold">Мои питомцы</h1>
           <div className="flex items-center gap-3">
             <a
+              href="/appointments"
+              className="rounded-full border border-border bg-card px-6 py-2.5 text-sm font-medium transition-colors hover:border-accent/40"
+            >
+              Мои записи
+            </a>
+            <a
               href="/chat"
               className="rounded-full border border-border bg-card px-6 py-2.5 text-sm font-medium transition-colors hover:border-accent/40"
             >
