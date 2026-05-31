@@ -72,6 +72,38 @@ export interface SearchVetsParams {
   available?: boolean;
 }
 
+export interface SlotResponse {
+  id: number;
+  vetId: number;
+  startTime: string;
+  booked: boolean;
+}
+
+export type AppointmentStatus = "BOOKED" | "CANCELLED";
+
+export interface AppointmentResponse {
+  id: number;
+  slotId: number;
+  slotStartTime: string;
+  ownerId: number;
+  ownerFirstName: string;
+  ownerLastName: string;
+  vetProfileId: number;
+  vetFirstName: string;
+  vetLastName: string;
+  petId?: number;
+  petName?: string;
+  reason?: string;
+  status: AppointmentStatus;
+  createdAt: string;
+}
+
+export interface CreateAppointmentRequest {
+  slotId: number;
+  petId?: number;
+  reason?: string;
+}
+
 export interface ConversationResponse {
   id: number;
   ownerId: number;
@@ -207,6 +239,31 @@ class ApiClient {
     return this.request(`/api/conversations/${conversationId}/messages`, {
       method: "POST",
       body: JSON.stringify({ content }),
+    });
+  }
+
+  listVetSlots(vetId: number, from?: string, to?: string): Promise<SlotResponse[]> {
+    const query = new URLSearchParams();
+    if (from) query.set("from", from);
+    if (to) query.set("to", to);
+    const qs = query.toString();
+    return this.request(`/api/vets/${vetId}/slots${qs ? `?${qs}` : ""}`);
+  }
+
+  createAppointment(data: CreateAppointmentRequest): Promise<AppointmentResponse> {
+    return this.request("/api/appointments", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  listMyAppointments(): Promise<AppointmentResponse[]> {
+    return this.request("/api/appointments");
+  }
+
+  cancelAppointment(appointmentId: number): Promise<AppointmentResponse> {
+    return this.request(`/api/appointments/${appointmentId}/cancel`, {
+      method: "POST",
     });
   }
 }
