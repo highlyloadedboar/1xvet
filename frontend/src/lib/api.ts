@@ -72,6 +72,26 @@ export interface SearchVetsParams {
   available?: boolean;
 }
 
+export interface ConversationResponse {
+  id: number;
+  ownerId: number;
+  ownerFirstName: string;
+  ownerLastName: string;
+  vetId: number;
+  vetFirstName: string;
+  vetLastName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MessageResponse {
+  id: number;
+  conversationId: number;
+  senderId: number;
+  content: string;
+  createdAt: string;
+}
+
 export interface ApiError {
   status: number;
   message: string;
@@ -166,6 +186,28 @@ class ApiClient {
 
   getVet(vetId: number): Promise<VetProfileResponse> {
     return this.request(`/api/vets/${vetId}`);
+  }
+
+  listConversations(): Promise<ConversationResponse[]> {
+    return this.request("/api/conversations");
+  }
+
+  createConversation(otherUserId: number): Promise<ConversationResponse> {
+    return this.request("/api/conversations", {
+      method: "POST",
+      body: JSON.stringify({ otherUserId }),
+    });
+  }
+
+  listMessages(conversationId: number): Promise<MessageResponse[]> {
+    return this.request(`/api/conversations/${conversationId}/messages`);
+  }
+
+  sendMessage(conversationId: number, content: string): Promise<MessageResponse> {
+    return this.request(`/api/conversations/${conversationId}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ content }),
+    });
   }
 }
 

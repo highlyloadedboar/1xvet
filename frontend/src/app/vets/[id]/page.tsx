@@ -1,19 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import Header from "@/components/Header";
 import { api, type ApiError, type VetProfileResponse } from "@/lib/api";
 
 export default function VetProfilePage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const vetId = Number(params.id);
 
   const { user, loading: authLoading } = useAuth("OWNER");
   const [vet, setVet] = useState<VetProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [openingChat, setOpeningChat] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -32,6 +34,17 @@ export default function VetProfilePage() {
   }, [authLoading, vetId]);
 
   if (authLoading || !user) return null;
+
+  async function openChat() {
+    if (!vet || openingChat) return;
+    setOpeningChat(true);
+    try {
+      const conversation = await api.createConversation(vet.userId);
+      router.push(`/chat?id=${conversation.id}`);
+    } catch {
+      setOpeningChat(false);
+    }
+  }
 
   return (
     <>
@@ -112,13 +125,14 @@ export default function VetProfilePage() {
                 )}
                 <button
                   type="button"
-                  disabled
-                  className="mt-5 w-full cursor-not-allowed rounded-full bg-accent/60 px-5 py-2.5 text-sm font-medium text-white"
+                  onClick={openChat}
+                  disabled={openingChat}
+                  className="mt-5 w-full rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
                 >
-                  Записаться
+                  {openingChat ? "Открываем чат..." : "Написать в чат"}
                 </button>
                 <p className="mt-3 text-xs text-muted">
-                  Запись на слоты появится после релиза модуля расписания
+                  Запись на конкретные слоты появится после релиза модуля расписания
                 </p>
               </div>
             </aside>

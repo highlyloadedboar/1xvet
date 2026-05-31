@@ -12,7 +12,15 @@ export default function VetDashboard() {
     <>
       <Header user={user} />
       <main className="mx-auto w-full max-w-5xl px-6 py-8">
-        <h1 className="font-serif text-3xl font-bold">Кабинет ветеринара</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="font-serif text-3xl font-bold">Кабинет ветеринара</h1>
+          <a
+            href="/chat"
+            className="rounded-full bg-accent px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+          >
+            Сообщения
+          </a>
+        </div>
         <p className="mt-2 text-muted">
           Здесь будут ваши консультации и расписание
         </p>
