@@ -1,0 +1,81 @@
+schemas:
+  CreateConversationRequest:
+    type: object
+    required:
+      - otherUserId
+    properties:
+      otherUserId:
+        type: integer
+        format: int64
+        description: User ID of the other participant (OWNER if caller is VET and vice versa)
+
+  ConversationResponse:
+    type: object
+    required:
+      - id
+      - ownerId
+      - ownerFirstName
+      - ownerLastName
+      - vetId
+      - vetFirstName
+      - vetLastName
+      - createdAt
+      - updatedAt
+    properties:
+      id:
+        type: integer
+        format: int64
+      ownerId:
+        type: integer
+        format: int64
+      ownerFirstName:
+        type: string
+      ownerLastName:
+        type: string
+      vetId:
+        type: integer
+        format: int64
+      vetFirstName:
+        type: string
+      vetLastName:
+        type: string
+      createdAt:
+        type: string
+        format: date-time
+      updatedAt:
+        type: string
+        format: date-time
+
+  SendMessageRequest:
+    type: object
+    required:
+      - content
+    properties:
+      content:
+        type: string
+        minLength: 1
+        maxLength: 4000
+
+  MessageResponse:
+    type: object
+    required:
+      - id
+      - conversationId
+      - senderId
+      - content
+      - createdAt
+    properties:
+      id:
+        type: integer
+        format: int64
+      conversationId:
+        type: integer
+        format: int64
+      senderId:
+        type: integer
+        format: int64
+      content:
+        type: string
+      createdAt:
+        type: string
+        format: date-time

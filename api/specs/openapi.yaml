@@ -256,6 +256,114 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/conversations:
+    get:
+      tags:
+        - chat
+      operationId: listConversations
+      summary: List current user's conversations
+      responses:
+        "200":
+          description: List of conversations sorted by recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConversationResponse"
+
+    post:
+      tags:
+        - chat
+      operationId: createConversation
+      summary: Create or fetch existing conversation with another user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConversationRequest"
+      responses:
+        "200":
+          description: Conversation (existing or newly created)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationResponse"
+        "400":
+          description: Invalid participant role combination
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Other user not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/conversations/{conversationId}/messages:
+    get:
+      tags:
+        - chat
+      operationId: listMessages
+      summary: Fetch message history for a conversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Messages in chronological order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MessageResponse"
+        "404":
+          description: Conversation not found or caller is not a participant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    post:
+      tags:
+        - chat
+      operationId: sendMessage
+      summary: Send a message into a conversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageRequest"
+      responses:
+        "201":
+          description: Message saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "404":
+          description: Conversation not found or caller is not a participant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/auth/login:
     post:
       tags:
@@ -311,6 +419,16 @@ components:
       $ref: "vet.yaml#/schemas/VetProfileResponse"
     UpdateVetProfileRequest:
       $ref: "vet.yaml#/schemas/UpdateVetProfileRequest"
+
+    # chat
+    CreateConversationRequest:
+      $ref: "chat.yaml#/schemas/CreateConversationRequest"
+    ConversationResponse:
+      $ref: "chat.yaml#/schemas/ConversationResponse"
+    SendMessageRequest:
+      $ref: "chat.yaml#/schemas/SendMessageRequest"
+    MessageResponse:
+      $ref: "chat.yaml#/schemas/MessageResponse"
 
     # common
     ErrorResponse:
