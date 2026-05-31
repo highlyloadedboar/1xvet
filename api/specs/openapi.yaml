@@ -256,6 +256,115 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/vet/slots:
+    get:
+      tags:
+        - vet
+      operationId: getMyVetSlots
+      summary: List current vet's slots
+      responses:
+        "200":
+          description: List of slots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SlotResponse"
+
+    post:
+      tags:
+        - vet
+      operationId: createVetSlot
+      summary: Create a consultation slot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSlotRequest"
+      responses:
+        "201":
+          description: Slot created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SlotResponse"
+        "409":
+          description: Slot at the same time already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/vet/slots/{slotId}:
+    delete:
+      tags:
+        - vet
+      operationId: deleteVetSlot
+      summary: Delete a slot (only if not booked)
+      parameters:
+        - name: slotId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: Slot deleted
+        "404":
+          description: Slot not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Slot is already booked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/vets/{vetId}/slots:
+    get:
+      tags:
+        - vet
+      operationId: listVetSlots
+      summary: List a vet's available (not booked) slots in a date range
+      parameters:
+        - name: vetId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: List of available slots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SlotResponse"
+        "404":
+          description: Vet not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/conversations:
     get:
       tags:
@@ -419,6 +528,10 @@ components:
       $ref: "vet.yaml#/schemas/VetProfileResponse"
     UpdateVetProfileRequest:
       $ref: "vet.yaml#/schemas/UpdateVetProfileRequest"
+    CreateSlotRequest:
+      $ref: "vet.yaml#/schemas/CreateSlotRequest"
+    SlotResponse:
+      $ref: "vet.yaml#/schemas/SlotResponse"
 
     # chat
     CreateConversationRequest:
