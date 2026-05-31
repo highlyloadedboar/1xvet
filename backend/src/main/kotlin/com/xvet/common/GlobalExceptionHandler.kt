@@ -7,6 +7,10 @@ import com.xvet.chat.ConversationNotFoundException
 import com.xvet.chat.InvalidConversationPairException
 import com.xvet.chat.UserNotFoundException
 import com.xvet.pet.PetNotFoundException
+import com.xvet.schedule.InvalidSlotException
+import com.xvet.schedule.SlotBookedException
+import com.xvet.schedule.SlotConflictException
+import com.xvet.schedule.VetSlotNotFoundException
 import com.xvet.vet.VetProfileNotFoundException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -54,6 +58,30 @@ class GlobalExceptionHandler {
     @ExceptionHandler(InvalidConversationPairException::class)
     fun handleInvalidConversationPair(ex: InvalidConversationPairException): ResponseEntity<ErrorResponse> {
         val message = ex.message ?: "Invalid conversation participants"
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(message = message))
+    }
+
+    @ExceptionHandler(VetSlotNotFoundException::class)
+    fun handleVetSlotNotFound(ex: VetSlotNotFoundException): ResponseEntity<ErrorResponse> {
+        val message = ex.message ?: "Slot not found"
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse(message = message))
+    }
+
+    @ExceptionHandler(SlotConflictException::class)
+    fun handleSlotConflict(ex: SlotConflictException): ResponseEntity<ErrorResponse> {
+        val message = ex.message ?: "Slot conflict"
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse(message = message))
+    }
+
+    @ExceptionHandler(SlotBookedException::class)
+    fun handleSlotBooked(ex: SlotBookedException): ResponseEntity<ErrorResponse> {
+        val message = ex.message ?: "Slot is booked"
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse(message = message))
+    }
+
+    @ExceptionHandler(InvalidSlotException::class)
+    fun handleInvalidSlot(ex: InvalidSlotException): ResponseEntity<ErrorResponse> {
+        val message = ex.message ?: "Invalid slot"
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(message = message))
     }
 }

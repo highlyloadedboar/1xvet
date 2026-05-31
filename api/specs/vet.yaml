@@ -50,3 +50,32 @@ schemas:
         minimum: 0
       available:
         type: boolean
+
+  CreateSlotRequest:
+    type: object
+    required:
+      - startTime
+    properties:
+      startTime:
+        type: string
+        format: date-time
+
+  SlotResponse:
+    type: object
+    required:
+      - id
+      - vetId
+      - startTime
+      - booked
+    properties:
+      id:
+        type: integer
+        format: int64
+      vetId:
+        type: integer
+        format: int64
+      startTime:
+        type: string
+        format: date-time
+      booked:
+        type: boolean

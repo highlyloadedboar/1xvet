@@ -7,3 +7,5 @@ databaseChangeLog:
       file: db/changelog/tables/vet_profiles.sql
   - include:
       file: db/changelog/tables/chat.sql
+  - include:
+      file: db/changelog/tables/vet_slots.sql
