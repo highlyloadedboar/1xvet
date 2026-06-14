@@ -5,19 +5,23 @@
 
 ## Статус
 
-Проектирование. Код ещё не написан — прорабатываем фичи, архитектуру, стек.
+Прод-стенд работает (`http://111.88.254.81:3000`), сейчас на пути на домен `xvet.ru` + HTTPS через nginx + Let's Encrypt (PR #28, ждёт покупки домена). MVP закрыт, Фаза 2 (бронирование, расписание, дашборды) закрыта, наводим observability и переходим к Фазе 3 (отзывы, уведомления, оплата).
 
 ## Стек
 
-| Слой           | Технология                              |
-|----------------|-----------------------------------------|
-| Backend        | Kotlin + Spring Boot                    |
-| Frontend       | Next.js (React, TypeScript)             |
-| БД             | PostgreSQL                              |
-| API            | REST (рассматриваем GraphQL для чатов)  |
-| Реалтайм       | WebSocket (чат)                         |
-| Аутентификация | Spring Security + JWT (своя реализация) |
-| Деплой         | Yandex Cloud + Docker + GitHub Actions  |
+| Слой           | Технология                                              |
+|----------------|---------------------------------------------------------|
+| Backend        | Kotlin 2.0 + Spring Boot 3.4                            |
+| Frontend       | Next.js 16 (React 19, TypeScript) + Tailwind CSS 4      |
+| БД             | PostgreSQL (Yandex Managed PostgreSQL в проде)          |
+| ORM            | Spring Data JPA (Hibernate)                             |
+| Миграции       | Liquibase (SQL-формат)                                  |
+| API            | REST через OpenAPI 3.1 (контроллер-интерфейсы генерим)  |
+| Реалтайм       | REST polling каждые 3 сек (WebSocket — следующий шаг)   |
+| Аутентификация | Spring Security + JWT (своя реализация)                 |
+| Деплой         | Yandex Cloud VM + Docker + GitHub Actions               |
+| Reverse proxy  | nginx + Let's Encrypt (на пути к xvet.ru)               |
+| Observability  | Prometheus + Grafana + Loki + Promtail (на той же VM)   |
 
 ## Структура проекта
 
@@ -25,87 +29,94 @@
 1xvet/
 ├── CLAUDE.md
 ├── api/
-│   └── specs/             ← OpenAPI YAML (единый источник правды для API)
-│       ├── openapi.yaml   ← главный файл
+│   └── specs/                 ← OpenAPI YAML (единый источник правды)
+│       ├── openapi.yaml
+│       ├── auth.yaml
 │       ├── pet.yaml
 │       ├── vet.yaml
-│       ├── booking.yaml
+│       ├── booking.yaml       ← appointments
 │       ├── chat.yaml
-│       └── auth.yaml
+│       └── common.yaml
+├── backend/                   ← Kotlin + Spring Boot (контроллеры генерим из спеки)
+│   └── src/main/kotlin/com/xvet/
+│       ├── auth/              ← JWT, регистрация, логин
+│       ├── pet/               ← питомцы CRUD
+│       ├── vet/               ← профиль вета, поиск
+│       ├── schedule/          ← слоты + appointments (booking)
+│       ├── chat/              ← беседы + сообщения (REST)
+│       └── common/            ← SecurityConfig, GlobalExceptionHandler
+├── frontend/                  ← Next.js (App Router) + Tailwind
+│   ├── public/catsanddogs.png ← hero-портрет
+│   └── src/
+│       ├── app/               ← роуты
+│       ├── components/ui/     ← Button, Card, Tag, Avatar, Icon и т.д.
+│       └── lib/               ← api.ts (типы + клиент), auth.ts (хуки)
 ├── docs/
-│   ├── product/           ← что строим
-│   │   ├── features.md    ← все фичи из дизайна
-│   │   ├── personas.md    ← целевая аудитория
-│   │   └── roadmap.md     ← порядок реализации
-│   ├── architecture/      ← как строим
-│   │   ├── overview.md    ← общая архитектура
-│   │   ├── stack.md       ← стек и обоснование
-│   │   └── decisions.md   ← ADR
-│   └── conventions/       ← правила разработки
+│   ├── product/
+│   │   ├── features.md        ← все экраны и сценарии
+│   │   ├── personas.md
+│   │   └── roadmap.md         ← что сделано, что в очереди
+│   ├── architecture/
+│   │   ├── overview.md        ← общая схема, модули, деплой
+│   │   ├── stack.md           ← обоснование выбора стека
+│   │   └── decisions.md       ← ADR
+│   └── conventions/
 │       └── coding.md
-├── backend/               ← Kotlin + Spring Boot (контроллеры генерятся из спеки)
-└── frontend/              ← Next.js (TS-клиент генерится из спеки)
+├── monitoring/                ← Prometheus/Grafana/Loki/Promtail (docker-compose)
+├── nginx/                     ← reverse proxy для xvet.ru (после домена)
+├── scripts/
+│   └── seed.sh                ← демо-данные для стенда
+└── .github/workflows/
+    ├── ci.yml                 ← тесты + линтеры на PR
+    └── deploy.yml             ← workflow_dispatch → build → deploy
 ```
 
-## Ключевые экраны (из дизайна)
+## Роли пользователей
 
-1. **Лендинг** — hero, соцдоказательство, шаги, превью врачей, отзывы
-2. **Дашборд владельца** — питомцы, консультации, профиль питомца
-3. **Поиск ветеринара** — фильтры, список, запись
-4. **Профиль ветеринара** — инфо, слоты записи, отзывы
-5. **Чат** — сайдбар бесед, сообщения, файлы/фото, typing
-6. **Дашборд ветеринара** — расписание, входящие запросы, пациенты
-
-## Две роли пользователей
-
-- **Владелец питомца** — ищет врача, записывается, консультируется в чате, управляет питомцами
-- **Ветеринар** — управляет расписанием, принимает/отклоняет запросы, ведёт чат-консультации
+- **Владелец питомца (OWNER)** — ищет врача, записывается, консультируется в чате, управляет питомцами
+- **Ветеринар (VET)** — управляет расписанием (слотами), принимает брони, ведёт чат-консультации
 
 ## Документация
 
-- [Продуктовые фичи](docs/product/features.md) — детальное описание всех экранов
+- [Роадмап](docs/product/roadmap.md) — что сделано/в очереди
+- [Продуктовые фичи](docs/product/features.md) — детальное описание экранов
 - [Целевая аудитория](docs/product/personas.md)
-- [Роадмап](docs/product/roadmap.md)
 - [Архитектура](docs/architecture/overview.md)
-- [��тек и обоснование](docs/architecture/stack.md)
-- [Архитектурные решения](docs/architecture/decisions.md)
+- [Стек и обоснование](docs/architecture/stack.md)
+- [Архитектурные решения (ADR)](docs/architecture/decisions.md)
 - [Конвенции кода](docs/conventions/coding.md)
-
-## Дизайн
-
-Прототип: `docs/design/1xVet v2.html` (5 интерактивных экранов на React)
-
-- Палитра: кремовый фон `#faf7f2`, терракотовый акцент `#c4622d`, тёплые тона
-- Шрифты: Lora (заголовки), DM Sans (body)
-- Стиль: тёплый, editorial, без "клинического" ощущения
+- [Observability stack](monitoring/README.md)
+- [nginx reverse proxy](nginx/README.md)
 
 ## Команды
 
 ```bash
-# Backend
-cd backend
-./gradlew build            # собрать + тесты + линтеры
-./gradlew bootRun          # запустить приложение
-./gradlew test             # тесты (Zonky embedded PG, без Docker)
-./gradlew openApiGenerate  # сгенерировать контроллеры/DTO из OpenAPI
-./gradlew detekt           # статический анализ
-./gradlew ktlintFormat     # автоформат кода
+# Backend (из ./backend)
+./gradlew build            # сборка + тесты + detekt + ktlint
+./gradlew bootRun          # запустить локально
+./gradlew test             # только тесты (Zonky embedded PG)
+./gradlew openApiGenerate  # сгенерировать контроллер-интерфейсы из OpenAPI
+./gradlew ktlintFormat     # автоформат
+./gradlew detekt           # статанализ
 
 # Инфраструктура
-docker compose up -d       # поднять PostgreSQL
+docker compose up -d       # поднять локальный PostgreSQL
 
-# Frontend
-cd frontend
-npm run dev              # dev-сервер (http://localhost:3000)
-npm run build            # production-сборка
-npm run lint             # ESLint
+# Frontend (из ./frontend)
+npm run dev                # http://localhost:3000
+npm run build              # production-сборка
+npm run lint               # ESLint
+
+# Данные для стенда
+./scripts/seed.sh                          # против дев-стенда
+./scripts/seed.sh http://localhost:8080    # против локального бэка
 ```
 
-**Важно:** Gradle требует Java 21 (настроено в `gradle.properties`).
+**Важно:** Gradle требует Java 21.
 
-## Конвенции (будут дополняться)
+## Конвенции
 
 - Язык кода: английский (переменные, комментарии)
 - Язык интерфейса: русский
-- Git: conventional commits (feat:, fix:, docs:, refactor:)
-- Branching: GitHub Flow (см. docs/conventions/coding.md)
+- Git: conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`)
+- Branching: GitHub Flow, 1 PR = 1 фича (см. `docs/conventions/coding.md`)

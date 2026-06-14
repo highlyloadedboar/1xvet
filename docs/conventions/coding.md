@@ -2,29 +2,36 @@
 
 ## Структура backend (Kotlin + Spring Boot)
 
-**Package by feature** с элементами DDD для сложных доменов.
+**Package by feature** с тонкими контроллерами поверх сгенерированных из OpenAPI интерфейсов.
 
 ```
 com.xvet/
-├── pet/
-│   ├── PetController.kt       ← тонкий, только маршрутизация
-│   ├── PetService.kt          ← бизнес-логика
-│   ├── PetRepository.kt       ← доступ к данным
-│   ├── Pet.kt                 ← Entity (БД)
-│   └── PetDto.kt              ← DTO (API вход/выход)
-├── vet/
-├── chat/
-├── booking/
-├── auth/
-└── common/                    ← общие утилиты, exceptions, config
+├── auth/                ← JWT, регистрация, логин
+├── pet/                 ← питомцы
+├── vet/                 ← профиль вета, публичный поиск
+├── schedule/            ← слоты + appointments (booking)
+├── chat/                ← беседы + сообщения (REST)
+└── common/              ← SecurityConfig, GlobalExceptionHandler, CORS
+```
+
+Внутри модуля:
+
+```
+schedule/
+├── VetSlotEntity.kt           ← JPA-сущность
+├── VetSlotRepository.kt       ← Spring Data JPA
+├── VetSlotService.kt          ← бизнес-логика
+├── BookingService.kt          ← booking-логика
+├── BookingController.kt       ← реализация BookingApi (сгенерирована)
+└── AppointmentEntity.kt
 ```
 
 **Принципы:**
-- Каждая фича — самодостаточный пакет
-- Controller тонкий: валидация входа → вызов сервиса → маппинг ответа
-- Service содержит бизнес-логику, не знает про HTTP
-- Entity ≠ DTO — всегда разделяем (маппинг через extension-функции Kotlin)
-- Если домен становится сложным — выделяем в DDD-стиле (domain/port/adapter)
+- Каждая фича — самодостаточный пакет.
+- Controller тонкий: реализует сгенерированный интерфейс и пробрасывает вызов в сервис. HTTP-маппинг и валидация спускаются из OpenAPI.
+- Service содержит бизнес-логику, не знает про HTTP.
+- JPA-сущности (`*Entity.kt`) и сгенерированные из OpenAPI DTO (`*Response.kt`, `*Request.kt`) — разные типы. Маппинг в сервисе через приватные extension-функции.
+- Если домен сильно растёт — отделяем в DDD-стиле (domain/port/adapter). Пока не понадобилось.
 
 ## API-first (OpenAPI)
 
@@ -34,42 +41,41 @@ com.xvet/
 ```
 api/specs/
 ├── openapi.yaml       ← главный файл, импортит остальные
-├── pet.yaml           ← эндпоинты + модели питомцев
-├── vet.yaml           ← ветеринары
-├── booking.yaml       ← запись
-├── chat.yaml          ← чат (REST часть)
-└── auth.yaml          ← авторизация
+├── auth.yaml
+├── pet.yaml
+├── vet.yaml           ← профиль вета + slots endpoints
+├── booking.yaml       ← appointments
+├── chat.yaml
+└── common.yaml        ← ErrorResponse и т.п.
 ```
 
 **Что генерируется:**
-- **Backend (Kotlin):** интерфейсы контроллеров + data classes DTO → реализуем интерфейсы в `*ServiceImpl.kt`
-- **Frontend (TypeScript):** типы + fetch-клиент → используем напрямую в компонентах
-
-**Инструменты:**
-- `openapi-generator` Gradle плагин (backend)
-- `openapi-typescript-codegen` или `orval` (frontend)
+- **Backend (Kotlin):** интерфейсы контроллеров + data classes DTO → реализуем интерфейсы в `*Controller.kt`. Лежит в `build/generated/openapi/`.
+- **Frontend (TypeScript):** типы дублируем вручную в `frontend/src/lib/api.ts`. Кодгенерация фронта не настроена — эндпоинтов пока мало, церемония бы перевесила пользу.
 
 **Правила:**
-- YAML — единый источник правды для API
-- Сгенерённый код в `.gitignore` (генерится на билде)
-- Контроллер НЕ пишем руками — реализуем сгенерённый интерфейс
-- DTO НЕ пишем руками — берём из генерации
-- Entity (БД) остаётся отдельной от DTO — маппинг в сервисе
+- YAML — единый источник правды для контрактов API.
+- Сгенерированный код не коммитим (в gitignore), генерится на каждом билде.
+- Контроллер НЕ пишем руками — реализуем сгенерированный интерфейс.
+- DTO НЕ пишем руками — берём `*Response` / `*Request` из генерации.
+- JPA Entity отделена от DTO — маппинг в сервисе.
 
 ## Работа с данными
 
-**ORM:** jOOQ
-- Типобезопасные SQL-запросы через Kotlin DSL
-- Классы таблиц генерируются из схемы БД (Gradle плагин)
-- Полный контроль над SQL, никакой магии
-- Entity (jOOQ Record) → DTO (сгенерённый из OpenAPI) — маппинг в сервисе
+**ORM:** Spring Data JPA (Hibernate под капотом).
 
-**Миграции:** Liquibase (SQL-формат, поддержка rollback)
+- JPA-сущность с аннотациями `@Entity` / `@Table` / `@Column`.
+- Репозиторий — интерфейс `JpaRepository<TEntity, Long>`, методы по сигнатуре (`findByOwnerIdOrderByCreatedAtDesc`).
+- Сложные запросы — через `@Query("...")` или JPA Specifications.
+- Транзакции — `@Transactional` Spring.
+
+**Миграции:** Liquibase (SQL-формат, поддержка rollback).
 
 **Подход:**
-- Пишем SQL-миграцию → Liquibase применяет → jOOQ генерит классы таблиц → используем в коде
-- Сложные запросы — нормально, jOOQ для этого и создан
-- Транзакции через `@Transactional` Spring
+- Сначала пишем SQL-миграцию → Liquibase применяет → создаём/обновляем JPA Entity под эту схему.
+- Никаких `ddl-auto: update` в проде — схема меняется только через миграции.
+
+> Раньше пробовали jOOQ (PR #12). Для текущих CRUD-запросов он давал больше boilerplate, чем сэкономленных багов, поэтому в PR #13 перешли на JPA.
 
 ## Тесты
 
@@ -186,29 +192,22 @@ inner class Login {
 
 | Триггер | Что делает |
 |---------|-----------|
-| PR в `main` | CI: сборка + тесты + detekt + ktlint |
-| Кнопка (workflow_dispatch) | Деплой на testing |
-| Approval (environment protection) | Деплой на production |
+| PR в `main` (`ci.yml`) | Сборка бэка через `./gradlew build` — компиляция + OpenAPI генерация + тесты + detekt + ktlint |
+| Кнопка `workflow_dispatch` (`deploy.yml`) | Билд + push образов в Yandex Container Registry + SSH-деплой на VM + поднятие monitoring-стека |
 
 **CI (автоматический):**
-- Запускается на каждый PR в `main`
-- Шаги: checkout → Java 21 → Gradle build (компиляция + OpenAPI генерация + тесты + линтеры)
-- PR не мержится если CI красный
+- Запускается на каждый PR в `main`.
+- Не прошёл — PR не мержится.
 
 **CD (ручной):**
-- Нажимаем кнопку "Run workflow" в GitHub → деплой на testing
-- После проверки на testing — подтверждаем (approval) → деплой на production
-- Используем GitHub Environments с protection rules для approval-шага
-
-**Деплой:**
-- Docker-образ собирается на CI
-- Пушится в container registry
-- Деплоится на Yandex Cloud
+- Открываем Actions → `Deploy` → Run workflow с веткой `main`.
+- Один стейдж — `production`. До PR #26 был ещё `testing`-стейдж на той же VM, убрали как лишний слой.
+- Секреты в GitHub Environment `production`: `YC_SA_KEY`, `VM_SSH_KEY`, `DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, `GRAFANA_ADMIN_PASSWORD`.
 
 **Почему ручной деплой, а не автоматический:**
-- Полный контроль — деплоим когда готовы
-- Можно смержить несколько PR и задеплоить разом
-- Безопасно — случайный merge docs не триггерит деплой
+- Полный контроль — деплоим когда готовы.
+- Можно смержить несколько PR и задеплоить одним прогоном.
+- Случайный merge docs или test-only PR не триггерит деплой.
 
 ## Логирование
 

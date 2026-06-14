@@ -2,162 +2,157 @@
 
 ## Общая схема
 
-**Модульный монолит** — один Spring Boot, код разделён по доменным модулям.
+**Модульный монолит** — один Spring Boot, код разделён по доменным модулям. Поверх — nginx-прокси (на стенде с доменом) и observability-стек.
 
 ```
-┌─────────────────────────────────────────────────┐
-│                   Frontend                       │
-│              Next.js (TypeScript)                │
-└──────────────────────┬──────────────────────────┘
-                       │ HTTP (REST) + WebSocket
-┌──────────────────────▼──────────────────────────┐
-│               Backend (Spring Boot)              │
-│                                                  │
-│  ┌────────┐ ┌────────┐ ┌─────────┐ ┌────────┐  │
-│  │  auth  │ │  pet   │ │   vet   │ │booking │  │
-│  └────────┘ └────────┘ └─────────┘ └────────┘  │
-│  ┌────────┐ ┌────────────────────────────────┐  │
-│  │  chat  │ │           common               │  │
-│  └────────┘ └────────────────────────────────┘  │
-└���─────────────────────┬──────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────┐
-│              PostgreSQL (одна БД)                 │
-└──────────────────────────────────────────────────┘
+                              ┌──────────────────────┐
+        Клиент (браузер) ───► │  nginx (TLS)         │
+                              │  xvet.ru / *.xvet.ru │
+                              └─┬──────────────┬─────┘
+                                │              │
+                                ▼              ▼
+                       ┌──────────────┐  ┌──────────────┐
+                       │   Frontend   │  │   Backend    │
+                       │   Next.js    │  │ Spring Boot  │
+                       │     :3000    │  │    :8080     │
+                       └──────────────┘  └───┬──────────┘
+                                             │ JPA / JDBC
+                                             ▼
+                                      ┌──────────────┐
+                                      │  PostgreSQL  │
+                                      └──────────────┘
+
+   Observability стек (рядом, отдельная docker-сеть):
+   Promtail ──► Loki      Prometheus ──► /actuator/prometheus (8081)
+                  └────────────┬────────────┘
+                               ▼
+                          Grafana :3001
 ```
 
-## Модули
+## Backend-модули
 
-| Модуль | Отвечает за |
-|--------|-------------|
-| auth | Регистрация, логин, JWT, роли |
-| pet | Питомцы: CRUD, профиль, медицинская история |
-| vet | Ветеринары: профиль, верификация, поиск, фильтры |
-| booking | Запись: слоты, расписание, подтверждение |
-| chat | Реалтайм-консультации: WebSocket, сообщения, файлы |
-| common | Общие утилиты, exceptions, конфигурация |
+| Пакет | Отвечает за |
+|-------|-------------|
+| `auth` | Регистрация, логин, JWT, роли OWNER/VET |
+| `pet` | Питомцы: CRUD, привязка к владельцу |
+| `vet` | Профиль вета, верификация, публичный поиск |
+| `schedule` | Слоты расписания вета + бронирование (appointments) |
+| `chat` | Беседы и сообщения через REST (WebSocket — следующая итерация) |
+| `common` | SecurityConfig, GlobalExceptionHandler, CORS |
 
 ## Принципы
 
-- Модули общаются через вызовы сервисов (внутри одного процесса)
-- Каждый модуль владеет своими таблицами в БД
-- Модуль НЕ лезет напрямую в таблицы другого модуля — только через его сервис
-- Если модуль разрастается — можно вынести в отдельный сервис без переписывания бизнес-логики
+- Модули общаются через вызовы сервисов в одном процессе.
+- Каждый модуль владеет своими таблицами; чужие таблицы не трогает напрямую.
+- Если модуль вырастает — отделяется без переписывания бизнес-логики.
 
 ## Слои внутри модуля
 
 ```
-pet/
-├── PetController.kt       ← сгенерирован из OpenAPI (интерфейс)
-├── PetControllerImpl.kt   ← реализация интерфейса, тонкий
-├── PetService.kt          ← бизнес-логика
-├── PetRepository.kt       ← jOOQ-запросы
-└── PetMapper.kt           ← Entity ↔ DTO (extension-функции)
+schedule/
+├── VetSlotEntity.kt       ← JPA-сущность
+├── VetSlotRepository.kt   ← Spring Data JPA
+├── VetSlotService.kt      ← бизнес-логика
+├── BookingService.kt      ← booking-логика, тоже в этом пакете
+├── BookingController.kt   ← реализация BookingApi (сгенерирована)
+└── AppointmentEntity.kt
 ```
 
-Controller → Service → Repository. Зависимости идут только вниз.
-
-## Реалтайм (чат)
-
-- WebSocket через Spring WebSocket (STOMP)
-- Подключение: клиент открывает WS-соединение после аутентификации
-- Сообщения сохраняются в БД + доставляются по WS в реальном времени
-- Если получатель офлайн — сообщение ждёт в БД, доставляется при подключении
+`Controller → Service → Repository`. Зависимости только вниз. Controllers тонкие — реализуют сгенерированный из OpenAPI интерфейс и пробрасывают вызов сервису.
 
 ## Аутентификация
 
-**Spring Security + JWT**, своя реализация.
+**Spring Security + JWT**, своя реализация (см. `auth/`).
 
-**Схема:**
+- `POST /api/auth/register` или `/login` → возвращает `{ token, user }`
+- Клиент кладёт токен в `localStorage`, шлёт в `Authorization: Bearer <token>`
+- `JwtFilter` парсит токен, кладёт `userId` как principal в SecurityContext
+- В контроллерах достаём через `SecurityContextHolder`
+
+JWT односторонний (без refresh-токена) — токен живёт 24 часа. Когда надо будет — добавим refresh.
+
+## Реалтайм (чат)
+
+**Сейчас:** REST + polling каждые 3 секунды. Фронт дёргает `GET /api/conversations/{id}/messages` по таймеру, отправляет через `POST`. Работает, проще в дебаге, легче на сети.
+
+**В планах:** WebSocket-транспорт через Spring WebSocket / STOMP. UI чата уже спроектирован так, чтобы переход был прозрачен — менять только источник сообщений.
+
+## API-first (OpenAPI)
+
+YAML в `api/specs/` — единый источник правды для контрактов:
+
 ```
-[Клиент] → POST /auth/login (email, password)
-         ← { accessToken (15 мин), refreshToken в httpOnly cookie (30 дней) }
-
-[Клиент] → GET /api/... + Authorization: Bearer <accessToken>
-
-[Клиент] → POST /auth/refresh (cookie с refreshToken)
-         ← { новый accessToken }
+api/specs/
+├── openapi.yaml      ← главный, импортит остальные
+├── auth.yaml
+├── pet.yaml
+├── vet.yaml
+├── booking.yaml
+├── chat.yaml
+└── common.yaml       ← общие ErrorResponse и т.п.
 ```
 
-**MVP:**
-- Регистрация по email + пароль
-- Две роли: OWNER, VET
-- JWT access token (15 мин) + refresh token (30 дней, httpOnly cookie)
-- Верификация email (подтверждение по ссылке)
-
-**Потом:**
-- OAuth (Google, VK, Telegram)
-- SMS-код / Magic link
-- 2FA для ветеринаров
+- Backend: `./gradlew openApiGenerate` собирает Kotlin-интерфейсы и DTO в `build/generated/openapi/`, контроллеры реализуют интерфейсы.
+- Frontend: типы вручную дублируются в `frontend/src/lib/api.ts` (мало эндпоинтов — кодгенерация была бы лишней церемонией).
 
 ## Деплой (Yandex Cloud)
 
 **Инфраструктура:**
 
-| Компонент | Сервис YC |
-|-----------|-----------|
-| Backend | Compute Instance (2 vCPU, 4GB RAM) |
-| БД | Managed PostgreSQL |
-| Файлы (фото, документы) | Object Storage (S3-совместимый) |
-| Frontend (статика) | Object Storage + CDN |
-| Docker-образы | Container Registry |
+| Компонент | Где |
+|-----------|-----|
+| Backend (Spring Boot) | docker-контейнер на VM |
+| Frontend (Next.js) | docker-контейнер на той же VM |
+| PostgreSQL | Yandex Managed PostgreSQL |
+| Container Registry | Yandex Container Registry |
+| Observability | Prometheus + Grafana + Loki + Promtail контейнеры на той же VM |
 
-**Окружения:**
-- `testing` — для проверки перед продом
-- `production` — для пользователей
+**Окружения:** одно — `production`. До PR #26 был отдельный `testing`-стейдж, выкинули как лишний слой.
 
-**CI/CD (GitHub Actions):**
+**Сеть:** все контейнеры на shared docker network `xvet-net`, чтобы Prometheus мог скрейпить бэк по `xvet-backend:8081`, Promtail видел контейнерные лейблы и т.д.
+
+**Деплой-пайплайн (GitHub Actions, `Deploy` workflow):**
 
 ```
-PR в main        → тесты + линтер (detekt, ktlint)
-Мерж в main      → автодеплой на testing
-Тег v*.*.* / кнопка → деплой на production
+workflow_dispatch вручную
+  └─► build-backend  (gradle build + docker push)
+  └─► build-frontend (npm build + docker push)
+        └─► deploy   (SSH на VM → docker pull/run + docker compose up для monitoring)
 ```
 
-**Пайплайн деплоя:**
-1. GitHub Actions собирает Docker-образ
-2. Пушит в Yandex Container Registry
-3. SSH на сервер → docker pull + docker compose up
-
-**Docker Compose (на сервере):**
-```yaml
-services:
-  backend:
-    image: cr.yandex/.../1xvet-backend:latest
-    ports: ["8080:8080"]
-    environment:
-      - DB_URL=...
-      - JWT_SECRET=...
-  frontend:
-    # статика деплоится в Object Storage
-```
+Все контейнеры запускаются с `--label logging=promtail`, чтобы Promtail цеплял их логи.
 
 ## Хранение файлов
 
-- Фото в чате, документы питомцев → Yandex Object Storage (S3 API)
-- Backend генерирует presigned URL для загрузки/скачивания
-- Фронт загружает файл напрямую в S3 (не через бэкенд)
+Не реализовано. Когда понадобится для чата — Yandex Object Storage (S3 API): фронт получает presigned URL у бэка и грузит файл напрямую в S3, бэк хранит только метаданные.
+
+## Observability
+
+`monitoring/` содержит docker-compose с четырьмя сервисами:
+
+- **Prometheus** — скрейпит `/actuator/prometheus` каждые 15 сек, 30 дней истории.
+- **Loki** — логи всех контейнеров с `logging=promtail` лейблом, 14 дней.
+- **Promtail** — log shipper, цепляется к docker.sock.
+- **Grafana** на `:3001` с pre-provisioned дашбордом `ИКС ВЕТ — Backend`: RPS, error rate, latency p50/p95/p99, топ 5xx-эндпоинтов, JVM heap, лента логов.
+
+Подробности в `monitoring/README.md`.
 
 ## Масштабирование
 
-**Текущая конфигурация (1 сервер 2 vCPU / 4GB):**
-- ~500-1000 RPS, ~5 000 DAU, ~10 000 WebSocket-соединений
-- Хватает на первые 10 000-20 000 зарегистрированных пользователей
+**Текущая конфигурация (1 VM 2 vCPU / 4 GB):** хватает на первые несколько тысяч пользователей.
 
 **Горизонтальное масштабирование:**
-- REST API — stateless (JWT), добавляешь инстанс + балансировщик (Yandex ALB) → работает
-- Фронтенд — статика в CDN, масштабируется бесконечно
-- Файлы — Object Storage, масштабируется сам
-- WebSocket (чат) — при 2+ инстансах нужен Redis Pub/Sub для доставки сообщений между серверами
-- БД — read replicas когда одной PostgreSQL станет мало
+- REST API — stateless (JWT), добавляем инстанс + Yandex Application Load Balancer.
+- Чат с WebSocket (когда будет): нужен Redis Pub/Sub для доставки сообщений между инстансами.
+- БД — read replicas Managed PostgreSQL.
+- Фронт — статика, легко в CDN.
 
-**Вертикальное масштабирование:**
-- Первый шаг: 4 vCPU / 8GB → x2 пропускная способность
+**Вертикальный шаг:** 4 vCPU / 8 GB — двукратный прирост без архитектурных изменений.
 
 ## Что НЕ нужно на старте
 
-- ❌ API Gateway — один сервис, нечего маршрутизировать
+- ❌ API Gateway — один бэкенд, нечего маршрутизировать
 - ❌ Service discovery — нет распределённых сервисов
-- ❌ Kafka/RabbitMQ — межмодульное общение синхронное
-- ❌ Мультитенантность — один продукт, одна платформа
-- ❌ Kubernetes — Docker Compose на одном сервере достаточно
+- ❌ Kafka / RabbitMQ — межмодульное общение синхронное
+- ❌ Kubernetes — два контейнера на одной VM, docker достаточно
+- ❌ Мультитенантность — один продукт
