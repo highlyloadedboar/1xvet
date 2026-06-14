@@ -1,28 +1,98 @@
 @import "tailwindcss";
 
 :root {
-  --background: #faf7f2;
-  --foreground: #2d2d2d;
-  --accent: #c4622d;
-  --accent-hover: #a8511f;
-  --muted: #8a8a8a;
-  --border: #e5e0d8;
-  --card: #ffffff;
+  --background: #f3f7f4;
+  --background-alt: #eaf1ec;
+  --foreground: #102219;
+  --muted: #56685e;
+  --light: #94a89c;
+  --border: #dde7e1;
+  --border-lt: #e9f1ec;
+  --surface: #ffffff;
+  --surface-2: #f8fbf9;
+  --accent: #16573e;
+  --accent-dim: #0f4631;
+  --accent-bg: #e2efe7;
+  --accent-border: #bcd9c8;
+  --on-accent: #ffffff;
+  --coral: #ff6a4d;
+  --coral-bg: #ffe6e0;
+  --warn: #c2761f;
+  --warn-bg: #fbeed8;
+  --danger: #c24332;
+  --shadow-sm: 0 2px 14px rgba(16, 60, 40, 0.06);
+  --shadow-md: 0 12px 44px rgba(16, 60, 40, 0.11);
+  --radius: 16px;
+  --radius-sm: 11px;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-background-alt: var(--background-alt);
   --color-foreground: var(--foreground);
-  --color-accent: var(--accent);
-  --color-accent-hover: var(--accent-hover);
   --color-muted: var(--muted);
+  --color-light: var(--light);
   --color-border: var(--border);
-  --color-card: var(--card);
+  --color-border-lt: var(--border-lt);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-card: var(--surface);
+  --color-accent: var(--accent);
+  --color-accent-dim: var(--accent-dim);
+  --color-accent-hover: var(--accent-dim);
+  --color-accent-bg: var(--accent-bg);
+  --color-accent-border: var(--accent-border);
+  --color-on-accent: var(--on-accent);
+  --color-coral: var(--coral);
+  --color-coral-bg: var(--coral-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-danger: var(--danger);
   --font-sans: var(--font-dm-sans);
-  --font-serif: var(--font-lora);
+  --font-serif: var(--font-archivo);
+  --font-head: var(--font-archivo);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+input,
+textarea,
+select,
+button {
+  font-family: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c5d6cb;
+  border-radius: 4px;
+}
+
+::selection {
+  background: rgba(22, 87, 62, 0.14);
+}
+
+@keyframes typing-dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-5px);
+    opacity: 1;
+  }
 }

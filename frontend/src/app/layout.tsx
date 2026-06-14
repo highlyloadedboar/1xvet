@@ -1,21 +1,23 @@
 import type { Metadata } from "next";
-import { Lora, DM_Sans } from "next/font/google";
+import { Manrope, DM_Sans } from "next/font/google";
 import "./globals.css";
 
-const lora = Lora({
-  variable: "--font-lora",
+const archivo = Manrope({
+  variable: "--font-archivo",
   subsets: ["latin", "cyrillic"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "1xVet — Ветеринарная помощь онлайн",
+  title: "1xVet — Ветеринарные консультации онлайн",
   description:
-    "Консультации проверенных ветеринаров в чате — без очередей, без стресса для животного, в любое время суток.",
+    "Точные консультации с проверенными ветеринарами в чате. Без очередей и стресса для питомца, в любое время суток.",
 };
 
 export default function RootLayout({
@@ -26,7 +28,7 @@ export default function RootLayout({
   return (
     <html
       lang="ru"
-      className={`${lora.variable} ${dmSans.variable} h-full antialiased`}
+      className={`${archivo.variable} ${dmSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>
