@@ -30,6 +30,8 @@ class SecurityConfig(
                 auth
                     .requestMatchers("/api/auth/**", "/api/health", "/api/vets", "/api/vets/**")
                     .permitAll()
+                    .requestMatchers("/actuator/**")
+                    .permitAll()
                     .anyRequest()
                     .authenticated()
             }.exceptionHandling {
