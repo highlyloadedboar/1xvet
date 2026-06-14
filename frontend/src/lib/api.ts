@@ -250,6 +250,23 @@ class ApiClient {
     return this.request(`/api/vets/${vetId}/slots${qs ? `?${qs}` : ""}`);
   }
 
+  getMyVetSlots(): Promise<SlotResponse[]> {
+    return this.request("/api/vet/slots");
+  }
+
+  createVetSlot(startTime: string): Promise<SlotResponse> {
+    return this.request("/api/vet/slots", {
+      method: "POST",
+      body: JSON.stringify({ startTime }),
+    });
+  }
+
+  deleteVetSlot(slotId: number): Promise<void> {
+    return this.request(`/api/vet/slots/${slotId}`, {
+      method: "DELETE",
+    });
+  }
+
   createAppointment(data: CreateAppointmentRequest): Promise<AppointmentResponse> {
     return this.request("/api/appointments", {
       method: "POST",
