@@ -1,8 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import Header from "@/components/Header";
+import Avatar from "@/components/ui/Avatar";
+import Button from "@/components/ui/Button";
+import Field from "@/components/ui/Field";
+import Icon from "@/components/ui/Icon";
+import Pill from "@/components/ui/Pill";
+import Stars from "@/components/ui/Stars";
+import Toggle from "@/components/ui/Toggle";
 import { api, type VetProfileResponse } from "@/lib/api";
 
 const SPECIALTIES = [
@@ -49,113 +57,105 @@ export default function VetSearchPage() {
   return (
     <>
       <Header user={user} />
-      <main className="mx-auto w-full max-w-5xl px-6 py-8">
-        <h1 className="font-serif text-3xl font-bold">Найти ветеринара</h1>
+      <main className="mx-auto w-full max-w-6xl px-7 py-10">
+        <h1 className="mb-1.5 font-serif text-[clamp(26px,3.4vw,38px)] font-bold tracking-[-0.7px]">
+          Найти врача
+        </h1>
+        <p className="mb-[30px] text-[15px] text-muted">
+          Проверенные специалисты — выберите подходящего
+        </p>
 
-        <div className="mt-8 space-y-5">
-          <div>
-            <input
-              type="search"
+        <div className="mb-7 flex flex-wrap items-center gap-3 border-b border-border pb-[22px]">
+          <div className="max-w-[320px] flex-1 basis-[240px]">
+            <Field
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Поиск по имени или специализации"
-              className="w-full rounded-full border border-border bg-card px-5 py-3 text-sm outline-none focus:border-accent"
+              onChange={(e) =>
+                setQuery((e.target as HTMLInputElement).value)
+              }
+              placeholder="Имя или специализация…"
+              icon={<Icon name="search" size={16} />}
             />
           </div>
-
           <div className="flex flex-wrap gap-2">
-            {SPECIALTIES.map((s) => {
-              const active = s === specialty;
-              return (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setSpecialty(s)}
-                  className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
-                    active
-                      ? "border-accent bg-accent text-white"
-                      : "border-border bg-card hover:border-accent/40"
-                  }`}
-                >
-                  {s}
-                </button>
-              );
-            })}
+            {SPECIALTIES.map((s) => (
+              <Pill key={s} active={s === specialty} onClick={() => setSpecialty(s)}>
+                {s}
+              </Pill>
+            ))}
           </div>
-
-          <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={onlineOnly}
-              onChange={(e) => setOnlineOnly(e.target.checked)}
-              className="accent-accent"
-            />
+          <label className="ml-auto flex cursor-pointer items-center gap-2 whitespace-nowrap text-[13px] text-muted">
+            <Toggle on={onlineOnly} onClick={() => setOnlineOnly((v) => !v)} />
             Только онлайн
           </label>
         </div>
 
-        <div className="mt-8">
+        <div className="border-t border-border">
           {loading ? (
-            <p className="text-muted">Загрузка...</p>
+            <p className="py-12 text-center text-muted">Загрузка...</p>
           ) : filtered.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border p-12 text-center">
-              <p className="font-serif text-lg">Никого не нашлось</p>
-              <p className="mt-2 text-sm text-muted">
-                Попробуйте изменить фильтры
-              </p>
+            <div className="py-16 text-center">
+              <p className="mb-1.5 font-serif text-xl">Никого не нашлось</p>
+              <p className="text-sm text-light">Измените фильтры</p>
             </div>
           ) : (
-            <ul className="space-y-4">
-              {filtered.map((vet) => (
-                <li
-                  key={vet.id}
-                  className="rounded-xl border border-border bg-card p-6"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                      <div className="flex size-14 items-center justify-center rounded-full bg-accent/15 font-serif text-lg font-semibold text-accent">
-                        {vet.firstName[0]}
-                        {vet.lastName[0]}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold">
-                            {vet.firstName} {vet.lastName}
-                          </p>
-                          {vet.available && (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-700">
-                              <span className="size-1.5 rounded-full bg-green-500" />
-                              Онлайн
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted">
-                          {vet.specialty} · {formatExperience(vet.experienceYears)}
-                        </p>
-                        {vet.description && (
-                          <p className="mt-2 max-w-xl text-sm text-muted">
-                            {vet.description}
-                          </p>
-                        )}
-                      </div>
+            filtered.map((vet) => (
+              <Link
+                key={vet.id}
+                href={`/vets/${vet.id}`}
+                className="grid grid-cols-[1fr_auto] items-center gap-5 border-b border-border py-6 transition-colors hover:bg-background-alt/60"
+              >
+                <div className="flex items-center gap-[18px]">
+                  <Avatar
+                    name={`${vet.firstName} ${vet.lastName}`}
+                    size={56}
+                    seed={vet.id}
+                  />
+                  <div>
+                    <div className="flex items-baseline flex-wrap gap-[11px]">
+                      <span className="font-serif text-xl font-semibold">
+                        {vet.firstName} {vet.lastName}
+                      </span>
+                      <span className="text-[13px] text-light">
+                        {vet.specialty}
+                      </span>
                     </div>
-                    <div className="flex flex-col items-end gap-2">
-                      {vet.priceRub !== undefined && (
-                        <p className="text-sm font-medium">
-                          {vet.priceRub.toLocaleString("ru-RU")} ₽
-                        </p>
-                      )}
-                      <a
-                        href={`/vets/${vet.id}`}
-                        className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
-                      >
-                        Записаться
-                      </a>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-[14px]">
+                      <span className="flex items-center gap-1.5">
+                        <Stars value={5} size={12} />
+                        <span className="text-[12.5px] text-muted">
+                          {formatExperience(vet.experienceYears)}
+                        </span>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          className={`size-1.5 rounded-full ${vet.available ? "bg-accent" : "bg-light"}`}
+                        />
+                        <span
+                          className={`text-[12.5px] ${vet.available ? "text-accent" : "text-light"}`}
+                        >
+                          {vet.available ? "Онлайн" : "Офлайн"}
+                        </span>
+                      </span>
                     </div>
+                    {vet.description && (
+                      <p className="mt-2 line-clamp-2 max-w-2xl text-[13px] text-muted">
+                        {vet.description}
+                      </p>
+                    )}
                   </div>
-                </li>
-              ))}
-            </ul>
+                </div>
+                <div className="flex flex-col items-end gap-2.5">
+                  {vet.priceRub !== undefined && (
+                    <div className="font-serif text-lg font-bold">
+                      {vet.priceRub.toLocaleString("ru-RU")} ₽
+                    </div>
+                  )}
+                  <Button size="sm" type="button">
+                    Записаться
+                  </Button>
+                </div>
+              </Link>
+            ))
           )}
         </div>
       </main>
@@ -166,8 +166,8 @@ export default function VetSearchPage() {
 function formatExperience(years: number): string {
   const mod10 = years % 10;
   const mod100 = years % 100;
-  if (mod100 >= 11 && mod100 <= 14) return `опыт ${years} лет`;
-  if (mod10 === 1) return `опыт ${years} год`;
-  if (mod10 >= 2 && mod10 <= 4) return `опыт ${years} года`;
-  return `опыт ${years} лет`;
+  if (mod100 >= 11 && mod100 <= 14) return `${years} лет`;
+  if (mod10 === 1) return `${years} год`;
+  if (mod10 >= 2 && mod10 <= 4) return `${years} года`;
+  return `${years} лет`;
 }

@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import Header from "@/components/Header";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import Icon from "@/components/ui/Icon";
+import Tag from "@/components/ui/Tag";
 import { api, type ApiError, type SlotResponse } from "@/lib/api";
 
 export default function VetDashboard() {
@@ -23,30 +27,30 @@ export default function VetDashboard() {
   return (
     <>
       <Header user={user} />
-      <main className="mx-auto w-full max-w-5xl px-6 py-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="font-serif text-3xl font-bold">Кабинет ветеринара</h1>
-          <div className="flex items-center gap-3">
-            <a
-              href="/appointments"
-              className="rounded-full border border-border bg-card px-6 py-2.5 text-sm font-medium transition-colors hover:border-accent/40"
-            >
-              Мои записи
-            </a>
-            <a
-              href="/chat"
-              className="rounded-full bg-accent px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
-            >
-              Сообщения
-            </a>
+      <main className="mx-auto w-full max-w-6xl px-7 py-10">
+        <div className="mb-10 flex items-end justify-between gap-4">
+          <div>
+            <p className="mb-1.5 text-[13px] text-light">{formatToday()}</p>
+            <h1 className="font-serif text-[clamp(28px,3.6vw,40px)] font-bold leading-tight tracking-[-0.8px]">
+              Добрый день, <span className="text-accent">{user.firstName}</span>
+            </h1>
           </div>
         </div>
 
-        <section className="mt-10">
-          <h2 className="font-serif text-2xl font-bold">Расписание</h2>
-          <p className="mt-1 text-sm text-muted">
-            Добавляйте слоты, на которые владельцы смогут записаться.
-            Длительность консультации — 30 минут.
+        <section>
+          <div className="mb-4 flex items-end justify-between">
+            <div>
+              <p className="text-[11.5px] font-semibold uppercase tracking-[1.4px] text-light">
+                Расписание
+              </p>
+              <h2 className="mt-1 font-serif text-2xl font-bold tracking-[-0.4px]">
+                Ваши слоты
+              </h2>
+            </div>
+          </div>
+          <p className="mb-6 max-w-2xl text-sm text-muted">
+            Добавьте слоты, на которые владельцы смогут записаться. Длительность
+            консультации — 30 минут.
           </p>
 
           <AddSlotForm
@@ -59,12 +63,11 @@ export default function VetDashboard() {
             {slotsLoading ? (
               <p className="text-sm text-muted">Загрузка...</p>
             ) : slots.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border p-12 text-center">
+              <Card className="border-dashed bg-surface-2 p-12 text-center">
                 <p className="text-muted">
-                  Слотов пока нет. Добавьте первый — и владельцы смогут
-                  записаться.
+                  Слотов пока нет. Добавьте первый — и владельцы смогут записаться.
                 </p>
-              </div>
+              </Card>
             ) : (
               <SlotsList
                 slots={slots}
@@ -119,13 +122,10 @@ function AddSlotForm({
   const todayIso = new Date().toISOString().slice(0, 10);
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="mt-6 rounded-xl border border-border bg-card p-5"
-    >
-      <div className="flex flex-wrap items-end gap-3">
+    <Card className="p-5">
+      <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
         <div>
-          <label htmlFor="slot-date" className="block text-xs font-medium text-muted">
+          <label htmlFor="slot-date" className="mb-1 block text-xs font-medium text-light">
             Дата
           </label>
           <input
@@ -135,11 +135,11 @@ function AddSlotForm({
             value={date}
             onChange={(e) => setDate(e.target.value)}
             required
-            className="mt-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
+            className="rounded-[11px] border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
           />
         </div>
         <div>
-          <label htmlFor="slot-time" className="block text-xs font-medium text-muted">
+          <label htmlFor="slot-time" className="mb-1 block text-xs font-medium text-light">
             Время
           </label>
           <input
@@ -149,19 +149,16 @@ function AddSlotForm({
             value={time}
             onChange={(e) => setTime(e.target.value)}
             required
-            className="mt-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
+            className="rounded-[11px] border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
           />
         </div>
-        <button
-          type="submit"
-          disabled={!date || !time || submitting}
-          className="rounded-full bg-accent px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
-        >
+        <Button type="submit" disabled={!date || !time || submitting}>
+          <Icon name="plus" size={14} />
           {submitting ? "Добавляем..." : "Добавить слот"}
-        </button>
-      </div>
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-    </form>
+        </Button>
+      </form>
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+    </Card>
   );
 }
 
@@ -203,10 +200,10 @@ function SlotsList({
 
   return (
     <div className="space-y-5">
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
       {Array.from(grouped.entries()).map(([day, daySlots]) => (
         <div key={day}>
-          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted">
+          <p className="mb-2 text-[11.5px] font-semibold uppercase tracking-[1.4px] text-light">
             {formatDay(daySlots[0].startTime)}
           </p>
           <ul className="flex flex-wrap gap-2">
@@ -237,21 +234,21 @@ function SlotChip({
 }) {
   if (slot.booked) {
     return (
-      <span className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-sm">
+      <span className="inline-flex items-center gap-2 rounded-full border border-border bg-background-alt px-3 py-1.5 text-sm">
         <span>{formatTime(slot.startTime)}</span>
-        <span className="text-xs text-muted">Занято</span>
+        <Tag tone="neutral">Занято</Tag>
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm">
+    <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-sm">
       <span>{formatTime(slot.startTime)}</span>
       <button
         type="button"
         onClick={onDelete}
         disabled={deleting}
         aria-label="Удалить слот"
-        className="rounded-full text-muted transition-colors hover:text-red-600 disabled:opacity-50"
+        className="text-light transition-colors hover:text-danger disabled:opacity-50"
       >
         ×
       </button>
@@ -272,6 +269,14 @@ function formatTime(iso: string): string {
 
 function formatDay(iso: string): string {
   return new Date(iso).toLocaleDateString("ru-RU", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+  });
+}
+
+function formatToday(): string {
+  return new Date().toLocaleDateString("ru-RU", {
     weekday: "long",
     day: "2-digit",
     month: "long",

@@ -1,177 +1,199 @@
+import Image from "next/image";
 import Link from "next/link";
+import Avatar from "@/components/ui/Avatar";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import Icon from "@/components/ui/Icon";
+import Stars from "@/components/ui/Stars";
 
-const stats = [
-  { value: "12 мин", label: "Среднее время ответа врача" },
-  { value: "1 200+", label: "Проверенных ветеринаров" },
-  { value: "48 000+", label: "Проведённых консультаций" },
+const STATS: Array<[string, string]> = [
+  ["12 мин", "Среднее время ответа"],
+  ["1 200+", "Проверенных врачей"],
+  ["48 000+", "Консультаций проведено"],
+  ["4.9 ★", "Средний рейтинг"],
 ];
 
-const steps = [
+const STEPS = [
   {
-    number: "01",
+    n: "01",
+    icon: "search" as const,
     title: "Выберите врача",
-    text: "Откройте каталог, отфильтруйте по специализации, рейтингу и онлайн-статусу.",
+    body: "По специализации, рейтингу и отзывам. Каждый диплом проверен вручную.",
   },
   {
-    number: "02",
-    title: "Напишите в чат",
-    text: "Опишите проблему, прикрепите фото или анализы. Врач ответит за минуты.",
+    n: "02",
+    icon: "chat" as const,
+    title: "Опишите проблему",
+    body: "Симптомы, фото, документы — врач отвечает в течение 15 минут.",
   },
   {
-    number: "03",
+    n: "03",
+    icon: "shield" as const,
     title: "Получите помощь",
-    text: "Рекомендации, схема лечения, направление к узкому специалисту — без выезда из дома.",
+    body: "Назначения и наблюдение. Полная история остаётся у вас.",
   },
 ];
 
-const vets = [
+const VETS = [
   {
-    name: "Анна Соколова",
-    specialty: "Терапевт",
-    experience: "12 лет",
+    name: "Дмитрий Волков",
+    spec: "Терапевт · Хирург",
     rating: 4.9,
-    reviews: 312,
+    reviews: 234,
+    city: "Москва",
     online: true,
-    tags: ["Кошки", "Собаки"],
+    seed: 0,
   },
   {
-    name: "Михаил Орлов",
-    specialty: "Дерматолог",
-    experience: "9 лет",
+    name: "Елена Соколова",
+    spec: "Дерматолог",
     rating: 4.8,
-    reviews: 187,
+    reviews: 178,
+    city: "Москва",
     online: true,
-    tags: ["Аллергии", "Кожа"],
+    seed: 1,
   },
   {
-    name: "Елена Воронова",
-    specialty: "Офтальмолог",
-    experience: "15 лет",
-    rating: 5.0,
-    reviews: 246,
+    name: "Артём Козлов",
+    spec: "Офтальмолог",
+    rating: 4.7,
+    reviews: 95,
+    city: "Санкт-Петербург",
     online: false,
-    tags: ["Кошки", "Грызуны"],
+    seed: 2,
   },
 ];
 
-const reviews = [
+const REVIEWS = [
   {
-    quote:
-      "Кот ночью начал странно дышать, паника — в клинике никто не отвечает. Через 8 минут уже общалась с терапевтом, разобрались, что обошлось без скорой.",
-    author: "Мария",
-    pet: "Барсик, мейн-кун, 4 года",
+    name: "Ольга",
+    pet: "Рыжик · кот, 6 лет",
+    text: "Написала в 23:00, Рыжик не ел два дня. Доктор ответил за 8 минут и успокоил. Это бесценно.",
+    seed: 1,
   },
   {
-    quote:
-      "Очень удобно, когда у тебя три собаки и нет времени тащить их по очереди в клинику. Дерматолог по фото поставил диагноз и расписал лечение.",
-    author: "Денис",
-    pet: "Туман, хаски, 6 лет",
+    name: "Михаил",
+    pet: "Граф · лабрадор",
+    text: "После операции не знал, нормально ли заживает шов. Прислал фото — всё объяснили по-человечески.",
+    seed: 4,
   },
   {
-    quote:
-      "Записалась на удобное время, без очередей и стресса для кота. Врач отвечал по делу, без воды. Рекомендую.",
-    author: "Ольга",
-    pet: "Локи, британец, 2 года",
+    name: "Татьяна",
+    pet: "Снежинка · кролик",
+    text: "Ни одна клиника в городе не работала с кроликами. Здесь нашла специалиста за 10 минут.",
+    seed: 3,
   },
 ];
 
 export default function Home() {
   return (
     <>
-      <nav className="border-b border-border bg-background/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="font-serif text-xl font-bold">
-            1x<span className="text-accent">Vet</span>
+      <header className="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur">
+        <div className="mx-auto flex h-[58px] max-w-6xl items-center gap-6 px-7">
+          <Link href="/" className="flex items-center gap-[9px]">
+            <span className="flex size-[30px] items-center justify-center rounded-[12px] bg-accent text-on-accent">
+              <Icon name="pulse" size={17} strokeWidth={2.2} />
+            </span>
+            <span className="font-serif text-lg font-bold tracking-tight">
+              1x<span className="text-accent">Vet</span>
+            </span>
           </Link>
-          <div className="flex items-center gap-6">
-            <Link
-              href="/login"
-              className="text-sm text-muted transition-colors hover:text-foreground"
-            >
+          <div className="flex flex-1 items-center justify-end gap-3">
+            <Link href="/login" className="text-sm text-muted hover:text-foreground">
               Войти
             </Link>
-            <Link
-              href="/register"
-              className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
-            >
-              Найти врача
+            <Link href="/register">
+              <Button size="sm">Регистрация</Button>
             </Link>
           </div>
         </div>
-      </nav>
+      </header>
 
       <main>
-        <section className="mx-auto max-w-6xl px-6 pt-20 pb-16 sm:pt-28">
-          <div className="grid items-center gap-12 lg:grid-cols-[1.2fr_1fr]">
+        <section className="relative overflow-hidden px-7 pt-16 pb-14">
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse at 70% 35%, rgba(255,106,77,0.13) 0%, transparent 62%)",
+            }}
+          />
+          <div className="relative mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.15fr_0.85fr]">
             <div>
-              <h1 className="font-serif text-5xl font-bold leading-tight tracking-tight sm:text-6xl">
-                Ветеринарная помощь{" "}
-                <span className="text-accent">онлайн</span> — когда она нужна
+              <div className="mb-[22px] inline-flex items-center gap-[7px] rounded-full border border-accent-border bg-accent-bg px-[13px] py-[5px]">
+                <span className="size-1.5 rounded-full bg-accent" />
+                <span className="text-[12.5px] font-semibold tracking-[0.2px] text-accent">
+                  Ветеринары онлайн 24/7
+                </span>
+              </div>
+              <h1 className="mb-[22px] font-serif text-[clamp(40px,4.6vw,62px)] font-bold leading-[1.05] tracking-[-1.6px] text-foreground">
+                Врач для питомца —
+                <br />
+                <span className="text-accent">за восемь минут</span>
               </h1>
-              <p className="mt-6 max-w-xl text-lg text-muted">
-                Консультации проверенных ветеринаров в чате. Без очередей, без
-                стресса для животного, в любое время суток.
+              <p className="mb-[30px] max-w-[440px] text-[17px] leading-[1.7] text-muted">
+                Точные консультации с проверенными ветеринарами в чате. Без
+                очередей и стресса для питомца, в любое время суток.
               </p>
-              <div className="mt-10 flex flex-wrap items-center gap-4">
-                <Link
-                  href="/register"
-                  className="rounded-full bg-accent px-8 py-3.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
-                >
-                  Найти врача
+              <div className="mb-[30px] flex flex-wrap gap-3">
+                <Link href="/register">
+                  <Button size="lg">Найти врача</Button>
                 </Link>
-                <Link
-                  href="/register"
-                  className="rounded-full border border-border bg-card px-8 py-3.5 text-sm font-medium transition-colors hover:border-foreground/30"
-                >
-                  Я ветеринар
+                <Link href="/register">
+                  <Button size="lg" variant="outline">
+                    Я ветеринар
+                  </Button>
                 </Link>
               </div>
-              <div className="mt-10 flex items-center gap-4">
-                <div className="flex -space-x-2">
-                  {["#c4622d", "#a8511f", "#d68a55", "#8a4520"].map((c, i) => (
-                    <span
-                      key={i}
-                      className="inline-block size-9 rounded-full border-2 border-background"
-                      style={{ background: c }}
-                      aria-hidden
-                    />
+              <div className="flex items-center gap-[14px]">
+                <div className="flex">
+                  {["Оля", "Миша", "Таня", "Катя"].map((nm, i) => (
+                    <div
+                      key={nm}
+                      style={{ marginLeft: i ? -9 : 0 }}
+                      className="rounded-full border-2 border-background"
+                    >
+                      <Avatar name={nm} size={30} seed={i + 1} />
+                    </div>
                   ))}
                 </div>
-                <p className="text-sm text-muted">
-                  <span className="font-semibold text-foreground">
-                    48 000+
-                  </span>{" "}
-                  владельцев уже доверили нам своих питомцев
-                </p>
+                <div>
+                  <Stars value={5} size={12} />
+                  <p className="text-[12.5px] text-muted">
+                    <b className="text-foreground">48 000+</b> довольных владельцев
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="relative hidden lg:block">
-              <div className="absolute -inset-6 -z-10 rounded-3xl bg-accent/10 blur-2xl" />
-              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-                <div className="flex items-center gap-3 border-b border-border pb-4">
-                  <div className="size-10 rounded-full bg-accent/20" />
-                  <div>
-                    <p className="text-sm font-semibold">Анна Соколова</p>
-                    <p className="text-xs text-muted">
-                      Терапевт · онлайн
-                    </p>
-                  </div>
-                  <span className="ml-auto inline-flex size-2.5 rounded-full bg-green-500" />
+            <div className="relative flex justify-center">
+              <div className="absolute top-2 size-[300px] rounded-full border border-border bg-surface" />
+              <div className="relative size-[300px] overflow-hidden rounded-full border-2 border-accent-border shadow-[0_12px_44px_rgba(16,60,40,0.11)]">
+                <Image
+                  src="/catsanddogs.png"
+                  alt="Кошка и собака"
+                  width={350}
+                  height={350}
+                  priority
+                  className="block"
+                  style={{
+                    width: "116%",
+                    marginLeft: "-8%",
+                    marginTop: "4%",
+                    mixBlendMode: "multiply",
+                  }}
+                />
+              </div>
+              <div className="absolute -bottom-2 left-0 flex items-center gap-2.5 rounded-2xl border border-border bg-surface px-3.5 py-[11px] shadow-[0_12px_44px_rgba(16,60,40,0.11)]">
+                <div className="flex size-[34px] items-center justify-center rounded-full bg-accent-bg text-accent">
+                  <Icon name="shield" size={17} />
                 </div>
-                <div className="mt-4 space-y-3 text-sm">
-                  <div className="ml-auto max-w-[80%] rounded-2xl rounded-br-md bg-accent px-4 py-2.5 text-white">
-                    Кот вторые сутки отказывается от еды. Что делать?
+                <div>
+                  <div className="text-[12.5px] font-bold whitespace-nowrap">
+                    Дипломы проверены
                   </div>
-                  <div className="max-w-[80%] rounded-2xl rounded-bl-md bg-background px-4 py-2.5">
-                    Понимаю беспокойство. Прикрепите, пожалуйста, фото — и
-                    давайте уточним, есть ли рвота или вялость.
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-muted">
-                    <span className="inline-block size-1.5 animate-pulse rounded-full bg-muted" />
-                    <span className="inline-block size-1.5 animate-pulse rounded-full bg-muted [animation-delay:200ms]" />
-                    <span className="inline-block size-1.5 animate-pulse rounded-full bg-muted [animation-delay:400ms]" />
-                    <span className="ml-1">печатает</span>
+                  <div className="text-[11px] text-muted whitespace-nowrap">
+                    1 200+ врачей
                   </div>
                 </div>
               </div>
@@ -179,181 +201,151 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="border-y border-border bg-card">
-          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-6 py-12 sm:grid-cols-3">
-            {stats.map((s) => (
-              <div key={s.label} className="text-center sm:text-left">
-                <p className="font-serif text-4xl font-bold text-accent">
-                  {s.value}
-                </p>
-                <p className="mt-2 text-sm text-muted">{s.label}</p>
+        <section className="border-y border-border bg-surface">
+          <div className="mx-auto flex max-w-6xl flex-wrap justify-between gap-6 px-7 py-[22px]">
+            {STATS.map(([v, l]) => (
+              <div key={l} className="flex flex-col">
+                <span className="font-serif text-[26px] font-bold tracking-[-0.5px]">
+                  {v}
+                </span>
+                <span className="text-[12.5px] text-muted">{l}</span>
               </div>
             ))}
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-6 py-20">
-          <div className="max-w-2xl">
-            <p className="text-sm font-medium uppercase tracking-wider text-accent">
-              Как это работает
-            </p>
-            <h2 className="mt-3 font-serif text-4xl font-bold tracking-tight">
-              Три шага до консультации
-            </h2>
-          </div>
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {steps.map((step) => (
-              <div
-                key={step.number}
-                className="rounded-2xl border border-border bg-card p-8 transition-colors hover:border-accent/40"
-              >
-                <p className="font-serif text-3xl text-accent">{step.number}</p>
-                <h3 className="mt-4 font-serif text-xl font-semibold">
-                  {step.title}
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-muted">
-                  {step.text}
-                </p>
-              </div>
+        <section className="mx-auto max-w-6xl px-7 py-16">
+          <p className="mb-[14px] text-xs font-semibold uppercase tracking-[2px] text-accent">
+            Как это работает
+          </p>
+          <h2 className="mb-9 font-serif text-[clamp(26px,3.2vw,38px)] font-bold tracking-[-0.6px]">
+            Три шага до помощи
+          </h2>
+          <div className="grid gap-[18px] md:grid-cols-3">
+            {STEPS.map((s) => (
+              <Card key={s.n} className="p-[26px]">
+                <div className="mb-[18px] flex items-center justify-between">
+                  <div className="flex size-[46px] items-center justify-center rounded-[14px] bg-accent-bg text-accent">
+                    <Icon name={s.icon} size={22} />
+                  </div>
+                  <span className="font-serif text-3xl font-bold text-border">
+                    {s.n}
+                  </span>
+                </div>
+                <div className="mb-[9px] font-serif text-[19px] font-semibold tracking-[-0.3px]">
+                  {s.title}
+                </div>
+                <div className="text-sm leading-[1.65] text-muted">{s.body}</div>
+              </Card>
             ))}
           </div>
         </section>
 
-        <section className="bg-card">
-          <div className="mx-auto max-w-6xl px-6 py-20">
-            <div className="flex items-end justify-between gap-6">
-              <div className="max-w-2xl">
-                <p className="text-sm font-medium uppercase tracking-wider text-accent">
-                  Наши врачи
-                </p>
-                <h2 className="mt-3 font-serif text-4xl font-bold tracking-tight">
-                  Проверенные специалисты
-                </h2>
-                <p className="mt-3 text-muted">
-                  Каждый диплом верифицирован. Опыт от 5 лет.
-                </p>
-              </div>
-              <Link
-                href="/register"
-                className="hidden text-sm font-medium text-accent hover:underline sm:inline"
-              >
-                Все врачи →
+        <section className="border-t border-border bg-background-alt">
+          <div className="mx-auto max-w-6xl px-7 py-[60px]">
+            <div className="mb-8 flex items-end justify-between gap-6">
+              <h2 className="font-serif text-[clamp(24px,3vw,34px)] font-bold tracking-[-0.6px]">
+                Врачи, которым доверяют
+              </h2>
+              <Link href="/register" className="hidden sm:inline-flex">
+                <Button size="sm" variant="soft">
+                  Все врачи <Icon name="arrow" size={15} />
+                </Button>
               </Link>
             </div>
-            <div className="mt-12 grid gap-6 md:grid-cols-3">
-              {vets.map((vet) => (
-                <div
-                  key={vet.name}
-                  className="rounded-2xl border border-border bg-background p-6"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex size-12 items-center justify-center rounded-full bg-accent/15 font-serif text-lg font-semibold text-accent">
-                        {vet.name.split(" ").map((p) => p[0]).join("")}
+            <div className="grid gap-4 md:grid-cols-3">
+              {VETS.map((v) => (
+                <Card key={v.name} hover className="p-[22px]">
+                  <div className="mb-[14px] flex items-center gap-[13px]">
+                    <Avatar name={v.name} size={48} seed={v.seed} />
+                    <div>
+                      <div className="font-serif text-base font-semibold">
+                        {v.name}
                       </div>
-                      <div>
-                        <p className="font-semibold">{vet.name}</p>
-                        <p className="text-sm text-muted">{vet.specialty}</p>
+                      <div className="mt-0.5 text-[12.5px] text-muted">
+                        {v.spec}
                       </div>
                     </div>
-                    {vet.online && (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-700">
-                        <span className="size-1.5 rounded-full bg-green-500" />
-                        Онлайн
-                      </span>
-                    )}
                   </div>
-                  <div className="mt-4 flex items-center gap-2 text-sm">
-                    <span className="font-semibold">★ {vet.rating}</span>
-                    <span className="text-muted">
-                      ({vet.reviews} отзывов)
+                  <div className="mb-3 flex items-center gap-[7px]">
+                    <Stars value={Math.round(v.rating)} />
+                    <span className="text-[12.5px] text-muted">
+                      {v.rating} · {v.reviews}
                     </span>
-                    <span className="text-muted">·</span>
-                    <span className="text-muted">{vet.experience}</span>
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-1.5">
-                    {vet.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`size-1.5 rounded-full ${v.online ? "bg-accent" : "bg-light"}`}
+                    />
+                    <span
+                      className={`text-xs ${v.online ? "text-accent" : "text-light"}`}
+                    >
+                      {v.online ? "Онлайн" : "Офлайн"}
+                    </span>
+                    <span className="ml-auto text-xs text-light">{v.city}</span>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-6 py-20">
-          <div className="max-w-2xl">
-            <p className="text-sm font-medium uppercase tracking-wider text-accent">
-              Отзывы
-            </p>
-            <h2 className="mt-3 font-serif text-4xl font-bold tracking-tight">
-              Что говорят владельцы
-            </h2>
-          </div>
-          <div className="mt-12 grid gap-8 md:grid-cols-3">
-            {reviews.map((r) => (
-              <figure
-                key={r.author}
-                className="flex flex-col rounded-2xl border border-border bg-card p-8"
-              >
-                <svg
-                  className="size-7 text-accent/40"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
+        <section className="mx-auto max-w-6xl px-7 py-16">
+          <p className="mb-9 text-xs font-semibold uppercase tracking-[2px] text-accent">
+            Отзывы
+          </p>
+          <div className="grid gap-9 md:grid-cols-3">
+            {REVIEWS.map((r) => (
+              <div key={r.name}>
+                <div
+                  className="mb-2.5 select-none font-serif text-[56px] leading-[0.7] text-accent opacity-50"
                   aria-hidden
                 >
-                  <path d="M9 7c-3 0-5 2-5 5v5h5v-5H7c0-2 1-3 2-3V7zm9 0c-3 0-5 2-5 5v5h5v-5h-2c0-2 1-3 2-3V7z" />
-                </svg>
-                <blockquote className="mt-4 flex-1 font-serif text-lg leading-relaxed">
-                  «{r.quote}»
-                </blockquote>
-                <figcaption className="mt-6 border-t border-border pt-4 text-sm">
-                  <p className="font-semibold">{r.author}</p>
-                  <p className="text-muted">{r.pet}</p>
-                </figcaption>
-              </figure>
+                  &ldquo;
+                </div>
+                <p className="mb-4 font-serif text-[16.5px] font-medium leading-[1.6]">
+                  {r.text}
+                </p>
+                <div className="flex items-center gap-2.5">
+                  <Avatar name={r.name} size={32} seed={r.seed} />
+                  <div>
+                    <div className="text-[13px] font-semibold">{r.name}</div>
+                    <div className="text-xs text-light">{r.pet}</div>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-6 pb-24">
-          <div className="overflow-hidden rounded-3xl bg-accent px-8 py-16 text-center text-white sm:px-16">
-            <h2 className="font-serif text-4xl font-bold tracking-tight sm:text-5xl">
-              Начните сегодня
-            </h2>
-            <p className="mx-auto mt-4 max-w-xl text-white/85">
-              Регистрация занимает минуту. Первая консультация — без обязательств.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-              <Link
-                href="/register"
-                className="rounded-full bg-white px-8 py-3.5 text-sm font-medium text-accent transition-colors hover:bg-white/90"
-              >
-                Найти врача
-              </Link>
-              <Link
-                href="/register"
-                className="rounded-full border border-white/30 px-8 py-3.5 text-sm font-medium text-white transition-colors hover:bg-white/10"
-              >
+        <section className="bg-accent px-7 py-14 text-center text-on-accent">
+          <h2 className="mb-3 font-serif text-[clamp(28px,3.6vw,42px)] font-bold tracking-[-0.8px]">
+            Начните сегодня
+          </h2>
+          <p className="mb-[30px] text-base opacity-85">
+            Первая консультация — уже через несколько минут
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link href="/register">
+              <button className="rounded-[13px] bg-on-accent px-[30px] py-[14px] text-[15px] font-bold text-accent transition-colors hover:bg-on-accent/90">
+                Я владелец питомца
+              </button>
+            </Link>
+            <Link href="/register">
+              <button className="rounded-[13px] border-[1.5px] border-on-accent px-[30px] py-[14px] text-[15px] font-bold text-on-accent transition-colors hover:bg-on-accent/10">
                 Я ветеринар
-              </Link>
-            </div>
+              </button>
+            </Link>
           </div>
         </section>
       </main>
 
-      <footer className="border-t border-border bg-card">
-        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 px-6 py-8 sm:flex-row sm:items-center">
+      <footer className="border-t border-border bg-surface">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 px-7 py-8 sm:flex-row sm:items-center">
           <p className="font-serif text-lg font-bold">
             1x<span className="text-accent">Vet</span>
           </p>
-          <p className="text-sm text-muted">
+          <p className="text-sm text-light">
             © {new Date().getFullYear()} 1xVet. Все права защищены.
           </p>
         </div>
