@@ -95,7 +95,7 @@ export default function Home() {
               <Icon name="pulse" size={17} strokeWidth={2.2} />
             </span>
             <span className="font-serif text-lg font-bold tracking-tight">
-              1x<span className="text-accent">Vet</span>
+              ИКС&nbsp;<span className="text-accent">ВЕТ</span>
             </span>
           </Link>
           <div className="flex flex-1 items-center justify-end gap-3">
@@ -343,10 +343,10 @@ export default function Home() {
       <footer className="border-t border-border bg-surface">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 px-7 py-8 sm:flex-row sm:items-center">
           <p className="font-serif text-lg font-bold">
-            1x<span className="text-accent">Vet</span>
+            ИКС&nbsp;<span className="text-accent">ВЕТ</span>
           </p>
           <p className="text-sm text-light">
-            © {new Date().getFullYear()} 1xVet. Все права защищены.
+            © {new Date().getFullYear()} ИКС ВЕТ. Все права защищены.
           </p>
         </div>
       </footer>

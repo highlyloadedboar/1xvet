@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: 1xVet API
+  title: ИКС ВЕТ API
   description: Ветеринарная онлайн-платформа
   version: 0.0.1
 

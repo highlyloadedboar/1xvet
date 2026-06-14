@@ -65,41 +65,9 @@ jobs:
           docker build --build-arg NEXT_PUBLIC_API_URL=http://${{ env.VM_ADDRESS }}:8080 -t ${{ env.REGISTRY }}/xvet-frontend:$VERSION .
           docker push ${{ env.REGISTRY }}/xvet-frontend:$VERSION
 
-  deploy-testing:
-    name: Deploy to Testing
-    needs: [build-backend, build-frontend]
-    runs-on: ubuntu-latest
-    environment: testing
-
-    steps:
-      - name: Deploy to VM
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ env.VM_ADDRESS }}
-          username: ${{ env.VM_USER }}
-          key: ${{ secrets.VM_SSH_KEY }}
-          script: |
-            sed -i 's|"cr.yandex": "ycr"|"cr.yandex": ""|g' ~/.docker/config.json 2>/dev/null || true
-            echo '${{ secrets.YC_SA_KEY }}' | docker login --username json_key --password-stdin cr.yandex
-            docker pull ${{ env.REGISTRY }}/xvet-backend:${{ needs.build-backend.outputs.image-tag }}
-            docker stop xvet-backend 2>/dev/null || true
-            docker rm xvet-backend 2>/dev/null || true
-            docker run -d --name xvet-backend --restart unless-stopped -p 8080:8080 \
-              -e "SPRING_DATASOURCE_URL=${{ secrets.DB_URL }}" \
-              -e "SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USER }}" \
-              -e "SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}" \
-              -e "SPRING_PROFILES_ACTIVE=prod" \
-              -e "JWT_SECRET=${{ secrets.JWT_SECRET }}" \
-              ${{ env.REGISTRY }}/xvet-backend:${{ needs.build-backend.outputs.image-tag }}
-            docker pull ${{ env.REGISTRY }}/xvet-frontend:${{ needs.build-frontend.outputs.image-tag }}
-            docker stop xvet-frontend 2>/dev/null || true
-            docker rm xvet-frontend 2>/dev/null || true
-            docker run -d --name xvet-frontend --restart unless-stopped -p 3000:3000 \
-              ${{ env.REGISTRY }}/xvet-frontend:${{ needs.build-frontend.outputs.image-tag }}
-
-  deploy-production:
+  deploy:
     name: Deploy to Production
-    needs: [build-backend, build-frontend, deploy-testing]
+    needs: [build-backend, build-frontend]
     runs-on: ubuntu-latest
     environment: production
 
@@ -111,6 +79,8 @@ jobs:
           username: ${{ env.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
+            sed -i 's|"cr.yandex": "ycr"|"cr.yandex": ""|g' ~/.docker/config.json 2>/dev/null || true
+            echo '${{ secrets.YC_SA_KEY }}' | docker login --username json_key --password-stdin cr.yandex
             docker pull ${{ env.REGISTRY }}/xvet-backend:${{ needs.build-backend.outputs.image-tag }}
             docker stop xvet-backend 2>/dev/null || true
             docker rm xvet-backend 2>/dev/null || true

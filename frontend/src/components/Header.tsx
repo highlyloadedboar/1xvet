@@ -36,7 +36,7 @@ export default function Header({ user }: { user: UserInfo }) {
             <Icon name="pulse" size={17} strokeWidth={2.2} />
           </span>
           <span className="font-serif text-lg font-bold tracking-tight">
-            1x<span className="text-accent">Vet</span>
+            ИКС&nbsp;<span className="text-accent">ВЕТ</span>
           </span>
         </Link>
         <nav className="flex flex-1 items-center gap-1 pl-1.5">
