@@ -59,10 +59,12 @@ jobs:
       - name: Build and push Docker image
         id: meta
         working-directory: frontend
+        env:
+          API_URL: ${{ vars.PUBLIC_API_URL || format('http://{0}:8080', env.VM_ADDRESS) }}
         run: |
           VERSION=$(git rev-parse --short HEAD)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          docker build --build-arg NEXT_PUBLIC_API_URL=http://${{ env.VM_ADDRESS }}:8080 -t ${{ env.REGISTRY }}/xvet-frontend:$VERSION .
+          docker build --build-arg NEXT_PUBLIC_API_URL="$API_URL" -t ${{ env.REGISTRY }}/xvet-frontend:$VERSION .
           docker push ${{ env.REGISTRY }}/xvet-frontend:$VERSION
 
   deploy:
@@ -74,13 +76,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy monitoring configs to VM
+      - name: Copy monitoring and nginx configs to VM
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ env.VM_ADDRESS }}
           username: ${{ env.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
-          source: "monitoring/"
+          source: "monitoring/,nginx/"
           target: "/home/${{ env.VM_USER }}"
 
       - name: Deploy to VM
@@ -130,3 +132,14 @@ jobs:
             cd /home/${{ env.VM_USER }}/monitoring
             GRAFANA_ADMIN_PASSWORD='${{ secrets.GRAFANA_ADMIN_PASSWORD }}' \
               docker compose up -d
+
+            # nginx reverse proxy
+            cd /home/${{ env.VM_USER }}
+            if command -v nginx >/dev/null 2>&1; then
+              sudo cp nginx/xvet.ru.conf /etc/nginx/sites-available/xvet.ru.conf
+              sudo ln -sf /etc/nginx/sites-available/xvet.ru.conf \
+                /etc/nginx/sites-enabled/xvet.ru.conf
+              sudo nginx -t && sudo systemctl reload nginx
+            else
+              echo "nginx is not installed yet — run nginx/README.md one-time setup"
+            fi
